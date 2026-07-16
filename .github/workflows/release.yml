@@ -16,6 +16,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -28,7 +30,7 @@ jobs:
       - name: Build exe
         run: python -m PyInstaller --onefile --windowed --name "扫雷" --distpath "." main.py
 
-      - name: Generate tag & Create Release
+      - name: Generate tag
         shell: bash
         run: |
           TAG="v$(date +'%Y.%m.%d-%H%M')"
@@ -41,19 +43,7 @@ jobs:
         with:
           tag_name: ${{ env.TAG }}
           name: "扫雷游戏 ${{ env.TAG }}"
-          body: |
-            ## 🎮 扫雷游戏
-
-            三种难度：**9×9**（10雷）| **27×27**（100雷）| **81×81**（800雷）
-
-            ### 功能
-            - ✅ 用户注册/登录
-            - ✅ 计时器 & 排行榜（不同难度独立排名）
-            - ✅ 双击数字格自动展开（Chord）
-            - ✅ 81×81 支持 Ctrl+滚轮缩放
-
-            ### 运行方式
-            下载 `扫雷.exe`，双击即可运行（仅限 Windows，无需安装 Python）。
+          generate_release_notes: true
           files: 扫雷.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
