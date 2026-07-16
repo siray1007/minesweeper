@@ -1,0 +1,16 @@
+# 数据库（含用户数据，不提交）
+minesweeper.db
+
+# 打包产物（只作为 Release 附件，不进仓库）
+扫雷.exe
+
+# PyInstaller 构建
+build_temp/
+*.spec
+
+# Python
+__pycache__/
+*.pyc
+
+# 系统
+Thumbs.db
