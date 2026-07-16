@@ -1,9 +1,6 @@
-name: Build & Release
+name: Build Release
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -23,6 +20,12 @@ jobs:
       - name: Build exe
         run: python -m PyInstaller --onefile --windowed --name "扫雷" --distpath "." main.py
 
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: 扫雷
+          path: 扫雷.exe
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -35,13 +38,11 @@ jobs:
             ### 功能
             - ✅ 用户注册/登录
             - ✅ 计时器 & 排行榜
-            - ✅ 双击数字格自动展开
-            - ✅ 81×81 支持缩放
+            - ✅ 双击数字格自动展开（Chord）
+            - ✅ 81×81 支持 Ctrl+滚轮缩放
 
-            ### 运行
-            下载 `扫雷.exe`，双击即可运行（仅限 Windows）。
+            ### 运行方式
+            下载 `扫雷.exe`，双击即可运行（仅限 Windows，无需安装 Python）。
           files: 扫雷.exe
-          draft: false
-          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

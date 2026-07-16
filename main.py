@@ -20,7 +20,7 @@ class MainApp:
 
     def __init__(self):
         self.root = tk.Tk()
-        self.root.withdraw()            # 隐藏根窗口
+        self.root.withdraw()
         self.current_user = None
         self.menu = None
 
@@ -28,19 +28,15 @@ class MainApp:
         self._show_auth()
         self.root.mainloop()
 
-    # ── 登录 / 注册 ─────────────────────────────────────
-
     def _show_auth(self):
         auth = AuthWindow(self.root, self._on_login)
         self.root.wait_window(auth)
-        if not self.current_user:       # 用户直接关闭了登录窗口
+        if not self.current_user:
             self.root.quit()
 
     def _on_login(self, user: dict):
         self.current_user = user
         self._show_menu()
-
-    # ── 主菜单 ───────────────────────────────────────────
 
     def _show_menu(self):
         if self.menu and self.menu.winfo_exists():
@@ -57,7 +53,6 @@ class MainApp:
         hs = self.menu.winfo_screenheight()
         self.menu.geometry(f'{w}x{h}+{(ws-w)//2}+{(hs-h)//2}')
 
-        # 标题
         tk.Label(self.menu, text="💣 扫雷游戏",
                  font=('微软雅黑', 28, 'bold'), bg='#f0f0f0', fg='#333'
                  ).pack(pady=(30, 5))
@@ -65,7 +60,6 @@ class MainApp:
                  font=('微软雅黑', 12), bg='#f0f0f0', fg='#666'
                  ).pack(pady=(0, 25))
 
-        # 难度选择
         tk.Label(self.menu, text="—— 选择难度 ——",
                  font=('微软雅黑', 13, 'bold'), bg='#f0f0f0', fg='#555'
                  ).pack(pady=(0, 15))
@@ -95,7 +89,6 @@ class MainApp:
                             command=lambda d=diff_key: self._start_game(d))
             btn.pack(pady=(0, 10))
 
-        # 底部按钮
         bottom = tk.Frame(self.menu, bg='#f0f0f0')
         bottom.pack(pady=25)
 
@@ -103,8 +96,6 @@ class MainApp:
                    width=15).pack(side=tk.LEFT, padx=10)
         ttk.Button(bottom, text="🚪 登出", command=self._logout,
                    width=15).pack(side=tk.LEFT, padx=10)
-
-    # ── 导航 ────────────────────────────────────────────
 
     def _start_game(self, difficulty: str):
         GameWindow(self.menu, self.current_user, difficulty, self._on_game_close)
