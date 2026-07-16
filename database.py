@@ -1,19 +1,30 @@
 """
 扫雷游戏 - 数据库模块
-SQLite 数据库：用户表 + 排行榜表
+本地 SQLite：用户认证
+云端 Gitee：排行榜（rankings.json）
 """
 import sqlite3
 import hashlib
 import os
 import sys
+import json
+import base64
+import urllib.request
+import urllib.error
 from datetime import datetime
 
 if getattr(sys, 'frozen', False):
     _APP_DIR = os.path.dirname(os.path.abspath(sys.executable))
 else:
     _APP_DIR = os.path.dirname(os.path.abspath(__file__))
-
 DB_PATH = os.path.join(_APP_DIR, 'minesweeper.db')
+
+GITEE_USER = 'siray-07'
+GITEE_REPO = 'minesweeper'
+GITEE_API  = f'https://gitee.com/api/v5/repos/{GITEE_USER}/{GITEE_REPO}/contents/rankings.json'
+GITEE_RAW  = f'https://gitee.com/{GITEE_USER}/{GITEE_REPO}/raw/master/rankings.json'
+GITEE_TOKEN = '7d6da7d260950ee67775f83242ac6564'
+MAX_RANKINGS = 100
 
 
 def get_db():
@@ -81,16 +92,21 @@ def login_user(username: str, password: str) -> tuple:
     return False, "用户名或密码错误！"
 
 
-def save_ranking(user_id: int, difficulty: str, time_seconds: int):
+def save_ranking(user_id: int, difficulty: str, time_seconds: int, username: str = ''):
     conn = get_db()
     c = conn.cursor()
     c.execute('INSERT INTO rankings (user_id, difficulty, time_seconds, completed_at) VALUES (?, ?, ?, ?)',
               (user_id, difficulty, time_seconds, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
     conn.commit()
     conn.close()
+    if username:
+        _gitee_append_ranking(username, difficulty, time_seconds)
 
 
 def get_rankings(difficulty: str, limit: int = 50) -> list:
+    online = _gitee_fetch_rankings(difficulty, limit)
+    if online is not None:
+        return online
     conn = get_db()
     c = conn.cursor()
     c.execute('''SELECT u.username, r.time_seconds, r.completed_at, r.user_id
@@ -100,3 +116,54 @@ def get_rankings(difficulty: str, limit: int = 50) -> list:
     results = [dict(row) for row in c.fetchall()]
     conn.close()
     return results
+
+
+def _gitee_fetch_rankings(difficulty: str, limit: int) -> list | None:
+    try:
+        req = urllib.request.Request(GITEE_RAW)
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            all_rankings = json.loads(resp.read().decode())
+    except Exception:
+        return None
+    filtered = [r for r in all_rankings if r.get('difficulty') == difficulty]
+    filtered.sort(key=lambda x: x.get('time_seconds', 99999))
+    return filtered[:limit]
+
+
+def _gitee_append_ranking(username: str, difficulty: str, time_seconds: int):
+    try:
+        get_url = f'{GITEE_API}?access_token={GITEE_TOKEN}'
+        req = urllib.request.Request(get_url)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            info = json.loads(resp.read().decode())
+        sha = info['sha']
+        content = base64.b64decode(info['content']).decode()
+        rankings = json.loads(content) if content.strip() else []
+    except Exception:
+        return
+    rankings.append({
+        'username': username,
+        'difficulty': difficulty,
+        'time_seconds': time_seconds,
+        'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    })
+    best = {}
+    for r in rankings:
+        key = (r['username'], r['difficulty'])
+        if key not in best or r['time_seconds'] < best[key]['time_seconds']:
+            best[key] = r
+    trimmed = sorted(best.values(), key=lambda x: x.get('time_seconds', 99999))
+    trimmed = trimmed[:MAX_RANKINGS]
+    new_content = json.dumps(trimmed, ensure_ascii=False, indent=2)
+    body = json.dumps({
+        'access_token': GITEE_TOKEN,
+        'content': base64.b64encode(new_content.encode()).decode(),
+        'sha': sha,
+        'message': f'📊 {username} {difficulty} {time_seconds}s',
+    }).encode()
+    try:
+        put_req = urllib.request.Request(GITEE_API, data=body, method='PUT',
+                                          headers={'Content-Type': 'application/json'})
+        urllib.request.urlopen(put_req, timeout=10)
+    except Exception:
+        pass
