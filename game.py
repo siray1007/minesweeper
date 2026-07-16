@@ -306,7 +306,7 @@ class GameWindow(tk.Toplevel):
         self._redraw()
 
     def _on_win(self):
-        save_ranking(self.user['id'],self.difficulty,self.timer_seconds)
+        save_ranking(self.user['id'],self.difficulty,self.timer_seconds,self.user['username'])
         m,s=divmod(self.timer_seconds,60)
         messagebox.showinfo("恭喜胜利！",f"🎉 你赢了！\n\n难度：{self.cfg['title']}\n用时：{m:02d}:{s:02d}\n\n成绩已记录到排行榜！")
 
