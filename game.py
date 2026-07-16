@@ -115,7 +115,6 @@ class GameWindow(tk.Toplevel):
         self.cell_size=self.cfg['cell']
         self.timer_running=False;self.timer_seconds=0;self._after_id=None
         self.zoom=1.0
-        self._flash_rects=[];self._flash_count=0;self._flash_target=None
         self._build_ui()
         self.protocol("WM_DELETE_WINDOW",self._close)
         if difficulty=='81x81':self.geometry("960x740")
@@ -271,35 +270,7 @@ class GameWindow(tk.Toplevel):
         if self.game.game_over or self.game.game_won:return
         r,c=self._get_cell(event.x,event.y)
         if r is None:return
-        g=self.game
-        if not g.revealed[r][c] or g.board[r][c]<=0:return
-        flag_cnt=sum(1 for dr in(-1,0,1) for dc in(-1,0,1)
-            if(dr or dc) and 0<=r+dr<g.rows and 0<=c+dc<g.cols and g.flagged[r+dr][c+dc])
-        if flag_cnt!=g.board[r][c]:return
-        cs=getattr(self,'_actual_cs',self.cell_size)
-        pad=1 if self.difficulty=='81x81' else 3
-        cells=[]
-        for dr in(-1,0,1):
-            for dc in(-1,0,1):
-                if dr==0 and dc==0:continue
-                nr,nc=r+dr,c+dc
-                if 0<=nr<g.rows and 0<=nc<g.cols:
-                    if not g.revealed[nr][nc] and not g.flagged[nr][nc]:
-                        cells.append((nc*cs+pad,nr*cs+pad,nc*cs+cs-pad,nr*cs+cs-pad))
-        if not cells:self._execute_chord(r,c);return
-        self._flash_rects=[self.canvas.create_rectangle(*p,fill='#ffe066',outline='#ff9900',width=2)for p in cells]
-        self._flash_count=0;self._flash_target=(r,c);self._do_flash()
-
-    def _do_flash(self):
-        self._flash_count+=1
-        if self._flash_count>4:
-            for rect in self._flash_rects:self.canvas.delete(rect)
-            self._flash_rects=[];self._execute_chord(*self._flash_target);return
-        state='hidden' if self._flash_count%2==0 else 'normal'
-        for rect in self._flash_rects:self.canvas.itemconfigure(rect,state=state)
-        self.after(100,self._do_flash)
-
-    def _execute_chord(self,r,c):
+        if not self.game.revealed[r][c]:return
         result=self.game.chord(r,c)
         self._redraw();self._update_mine_label()
         if result=='game_over':
