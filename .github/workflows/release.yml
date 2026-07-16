@@ -3,6 +3,9 @@ name: Build Release
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -20,16 +23,19 @@ jobs:
       - name: Build exe
         run: python -m PyInstaller --onefile --windowed --name "扫雷" --distpath "." main.py
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: 扫雷
-          path: 扫雷.exe
+      - name: Generate tag & Create Release
+        shell: bash
+        run: |
+          TAG="v$(date +'%Y.%m.%d-%H%M')"
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          git tag $TAG
+          git push origin $TAG
 
-      - name: Create Release
+      - name: Upload Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "扫雷游戏"
+          tag_name: ${{ env.TAG }}
+          name: "扫雷游戏 ${{ env.TAG }}"
           body: |
             ## 🎮 扫雷游戏
 
@@ -37,7 +43,7 @@ jobs:
 
             ### 功能
             - ✅ 用户注册/登录
-            - ✅ 计时器 & 排行榜
+            - ✅ 计时器 & 排行榜（不同难度独立排名）
             - ✅ 双击数字格自动展开（Chord）
             - ✅ 81×81 支持 Ctrl+滚轮缩放
 
