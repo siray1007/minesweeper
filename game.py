@@ -116,17 +116,16 @@ class GameWindow(tk.Toplevel):
         self.cell_size=self.cfg['cell']
         self.timer_running=False;self.timer_seconds=0;self._after_id=None
         self.zoom=1.0
-        self._fullscreen=False;self._normal_geom=''
         self._build_ui()
         self.protocol("WM_DELETE_WINDOW",self._close)
         if difficulty=='81x81':self.geometry("960x740")
         elif difficulty=='27x27':self.geometry("660x710")
         else:self.geometry("520x620")
-        self.resizable(False,False)
+        self.minsize(400,350)
+        self.resizable(True,True)
         self._center()
         self.grab_set()
-        self.bind('<F11>',lambda e:self._toggle_fullscreen())
-        self.bind('<Escape>',lambda e:self._exit_fullscreen())
+        self.bind('<Configure>',self._on_resize)
 
     def _center(self):
         self.update_idletasks()
@@ -135,35 +134,22 @@ class GameWindow(tk.Toplevel):
         self.geometry(f'+{(ws-w)//2}+{(hs-h)//2}')
 
     def _close(self):
-        self._exit_fullscreen();self._stop_timer();self.destroy();self.on_close()
+        self._stop_timer();self.destroy();self.on_close()
 
-    def _toggle_fullscreen(self):
-        if self._fullscreen:self._exit_fullscreen()
-        else:self._enter_fullscreen()
+    def _on_resize(self,event):
+        if event.widget!=self or self.difficulty=='81x81':return
+        if hasattr(self,'_resize_after'):self.after_cancel(self._resize_after)
+        self._resize_after=self.after(150,self._do_resize)
 
-    def _enter_fullscreen(self):
-        if self._fullscreen:return
-        self._normal_geom=self.geometry()
-        self.resizable(True,True)
-        self.attributes('-fullscreen',True)
-        self._fullscreen=True
-        if self.difficulty!='81x81':
-            self.update_idletasks()
-            w=self.winfo_width()-30;h=self.winfo_height()-150
-            new_cs=min(w//self.cfg['cols'],h//self.cfg['rows'])
-            self.cell_size=max(20,new_cs)
+    def _do_resize(self):
+        if not self.winfo_exists():return
+        w=self.winfo_width()-30;h=self.winfo_height()-140
+        new_cs=min(w//self.cfg['cols'],h//self.cfg['rows'])
+        new_cs=max(16,min(new_cs,120))
+        if new_cs!=self.cell_size:
+            self.cell_size=new_cs
             self.canvas.configure(width=self.cfg['cols']*self.cell_size,height=self.cfg['rows']*self.cell_size)
-        self._redraw()
-
-    def _exit_fullscreen(self):
-        if not self._fullscreen:return
-        self.attributes('-fullscreen',False)
-        self._fullscreen=False
-        self.resizable(False,False)
-        self.cell_size=self.cfg['cell']
-        if self.difficulty!='81x81':
-            self.canvas.configure(width=self.cfg['cols']*self.cell_size,height=self.cfg['rows']*self.cell_size)
-        self._redraw()
+            self._redraw()
 
     def _build_ui(self):
         bar=tk.Frame(self,bg='#d0d0d0',height=52)
@@ -189,8 +175,6 @@ class GameWindow(tk.Toplevel):
         self.canvas.bind('<Double-Button-1>',self._double_click)
         self.canvas.bind('<Button-3>',self._right_click)
         self.canvas.bind('<Button-2>',self._right_click)
-        self.canvas.bind('<F11>',lambda e:self._toggle_fullscreen())
-        self.canvas.bind('<Escape>',lambda e:self._exit_fullscreen())
         self._draw_small()
 
     def _draw_small(self):
@@ -232,8 +216,6 @@ class GameWindow(tk.Toplevel):
         self.canvas.bind('<Double-Button-1>',self._double_click)
         self.canvas.bind('<Button-3>',self._right_click)
         self.canvas.bind('<Button-2>',self._right_click)
-        self.canvas.bind('<F11>',lambda e:self._toggle_fullscreen())
-        self.canvas.bind('<Escape>',lambda e:self._exit_fullscreen())
         zf=tk.Frame(self,bg='#e0e0e0');zf.pack(fill=tk.X,padx=10,pady=(0,5))
         ttk.Button(zf,text="🔍−",command=self._zoom_out,width=4).pack(side=tk.LEFT,padx=2)
         self.zoom_label=tk.Label(zf,text="100%",font=('微软雅黑',9),bg='#e0e0e0',width=5)
