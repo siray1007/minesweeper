@@ -104,18 +104,28 @@ def save_ranking(user_id: int, difficulty: str, time_seconds: int, username: str
 
 
 def get_rankings(difficulty: str, limit: int = 50) -> list:
-    online = _gitee_fetch_rankings(difficulty, limit)
-    if online is not None:
-        return online
+    online = _gitee_fetch_rankings(difficulty, limit) or []
     conn = get_db()
     c = conn.cursor()
     c.execute('''SELECT u.username, r.time_seconds, r.completed_at, r.user_id
         FROM rankings r JOIN users u ON r.user_id = u.id
         WHERE r.difficulty = ? ORDER BY r.time_seconds ASC LIMIT ?''',
               (difficulty, limit))
-    results = [dict(row) for row in c.fetchall()]
+    local = [dict(row) for row in c.fetchall()]
     conn.close()
-    return results
+    seen = set()
+    merged = []
+    for r in online:
+        key = (r['username'], r['time_seconds'])
+        seen.add(key)
+        merged.append(r)
+    for r in local:
+        key = (r['username'], r['time_seconds'])
+        if key not in seen:
+            seen.add(key)
+            merged.append(r)
+    merged.sort(key=lambda x: x.get('time_seconds', 99999))
+    return merged[:limit]
 
 
 def _gitee_fetch_rankings(difficulty: str, limit: int) -> list | None:
