@@ -1,9 +1,11 @@
 """
 扫雷游戏 - 排行榜模块
+先秒显本地数据，后台异步拉云端后刷新
 """
 import tkinter as tk
 from tkinter import ttk
-from database import get_rankings
+import threading
+from database import get_rankings_local, _gitee_fetch_rankings
 
 DIFFICULTY_LABELS = [
     ('9x9',   '🟢 简单 9×9'),
@@ -20,9 +22,11 @@ class RankingWindow(tk.Toplevel):
         self.resizable(False, False)
         self.configure(bg='#f5f5f5')
         self.geometry("680x520")
+        self._trees = {}
         self._center()
         self._build_ui()
         self.grab_set()
+        threading.Thread(target=self._fetch_cloud, daemon=True).start()
 
     def _center(self):
         self.update_idletasks()
@@ -46,24 +50,49 @@ class RankingWindow(tk.Toplevel):
     def _build_table(self, parent, difficulty: str):
         cols = ('rank', 'username', 'time', 'date')
         tree = ttk.Treeview(parent, columns=cols, show='headings', height=15)
-        tree.heading('rank', text='排名')
+        tree.heading('rank',     text='排名')
         tree.heading('username', text='用户名')
-        tree.heading('time', text='用时')
-        tree.heading('date', text='完成日期')
-        tree.column('rank', width=60, anchor='center')
+        tree.heading('time',     text='用时')
+        tree.heading('date',     text='完成日期')
+        tree.column('rank',     width=60,  anchor='center')
         tree.column('username', width=160, anchor='center')
-        tree.column('time', width=140, anchor='center')
-        tree.column('date', width=220, anchor='center')
+        tree.column('time',     width=140, anchor='center')
+        tree.column('date',     width=220, anchor='center')
         sb = ttk.Scrollbar(parent, orient=tk.VERTICAL, command=tree.yview)
         tree.configure(yscrollcommand=sb.set)
         tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         sb.pack(side=tk.RIGHT, fill=tk.Y)
-        rankings = get_rankings(difficulty)
+        tree.tag_configure('me', background='#ffe0b2', font=('微软雅黑', 9, 'bold'))
+        self._trees[difficulty] = tree
+        self._populate_tree(tree, difficulty, get_rankings_local(difficulty))
+
+    def _populate_tree(self, tree, difficulty, rankings):
+        for item in tree.get_children():
+            tree.delete(item)
         if not rankings:
             tree.insert('', tk.END, values=('—', '暂无记录', '—', '—'))
         else:
             for i, rec in enumerate(rankings):
                 m, s = divmod(rec['time_seconds'], 60)
                 tags = ('me',) if rec['username'] == self.current_user['username'] else ()
-                tree.insert('', tk.END, values=(i+1, rec['username'], f"{m:02d}:{s:02d}", rec['completed_at']), tags=tags)
-        tree.tag_configure('me', background='#ffe0b2', font=('微软雅黑', 9, 'bold'))
+                tree.insert('', tk.END, values=(
+                    i + 1, rec['username'], f"{m:02d}:{s:02d}", rec['completed_at']), tags=tags)
+
+    def _fetch_cloud(self):
+        for diff_key in ['9x9', '27x27', '81x81']:
+            online = _gitee_fetch_rankings(diff_key, 50) or []
+            local = get_rankings_local(diff_key)
+            seen = set()
+            merged = []
+            for r in online:
+                seen.add((r['username'], r['time_seconds']))
+                merged.append(r)
+            for r in local:
+                key = (r['username'], r['time_seconds'])
+                if key not in seen:
+                    seen.add(key)
+                    merged.append(r)
+            merged.sort(key=lambda x: x.get('time_seconds', 99999))
+            tree = self._trees.get(diff_key)
+            if tree and tree.winfo_exists():
+                tree.after(0, lambda t=tree, d=diff_key, m=merged: self._populate_tree(t, d, m))
