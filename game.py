@@ -4,7 +4,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import random
-from database import save_ranking
+import threading
+from database import save_ranking, _gitee_append_ranking
 
 NUM_COLORS = {1:'#0000FF',2:'#008000',3:'#FF0000',4:'#000080',5:'#800000',6:'#008080',7:'#000000',8:'#808080'}
 
@@ -306,9 +307,16 @@ class GameWindow(tk.Toplevel):
         self._redraw()
 
     def _on_win(self):
-        save_ranking(self.user['id'],self.difficulty,self.timer_seconds,self.user['username'])
-        m,s=divmod(self.timer_seconds,60)
-        messagebox.showinfo("恭喜胜利！",f"🎉 你赢了！\n\n难度：{self.cfg['title']}\n用时：{m:02d}:{s:02d}\n\n成绩已记录到排行榜！")
+        save_ranking(self.user['id'], self.difficulty, self.timer_seconds)
+        m, s = divmod(self.timer_seconds, 60)
+        messagebox.showinfo("恭喜胜利！",
+                            f"🎉 你赢了！\n\n"
+                            f"难度：{self.cfg['title']}\n"
+                            f"用时：{m:02d}:{s:02d}\n\n"
+                            f"成绩已记录到排行榜！")
+        threading.Thread(target=_gitee_append_ranking,
+                         args=(self.user['username'], self.difficulty, self.timer_seconds),
+                         daemon=True).start()
 
     def restart(self):
         self._stop_timer();self.timer_seconds=0
