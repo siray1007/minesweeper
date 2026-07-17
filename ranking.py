@@ -4,7 +4,6 @@
 """
 import tkinter as tk
 from tkinter import ttk
-import threading
 from database import get_rankings_local, _gitee_fetch_rankings
 
 DIFFICULTY_LABELS = [
@@ -26,7 +25,8 @@ class RankingWindow(tk.Toplevel):
         self._center()
         self._build_ui()
         self.grab_set()
-        threading.Thread(target=self._fetch_cloud, daemon=True).start()
+        self._cloud_idx = 0
+        self.after(100, self._fetch_cloud_step)
 
     def _center(self):
         self.update_idletasks()
@@ -64,9 +64,9 @@ class RankingWindow(tk.Toplevel):
         sb.pack(side=tk.RIGHT, fill=tk.Y)
         tree.tag_configure('me', background='#ffe0b2', font=('微软雅黑', 9, 'bold'))
         self._trees[difficulty] = tree
-        self._populate_tree(tree, difficulty, get_rankings_local(difficulty))
+        self._populate_tree(tree, get_rankings_local(difficulty))
 
-    def _populate_tree(self, tree, difficulty, rankings):
+    def _populate_tree(self, tree, rankings):
         for item in tree.get_children():
             tree.delete(item)
         if not rankings:
@@ -75,11 +75,16 @@ class RankingWindow(tk.Toplevel):
             for i, rec in enumerate(rankings):
                 m, s = divmod(rec['time_seconds'], 60)
                 tags = ('me',) if rec['username'] == self.current_user['username'] else ()
+                date = rec.get('completed_at') or rec.get('created_at', '')
                 tree.insert('', tk.END, values=(
-                    i + 1, rec['username'], f"{m:02d}:{s:02d}", rec['completed_at']), tags=tags)
+                    i + 1, rec['username'], f"{m:02d}:{s:02d}", date), tags=tags)
 
-    def _fetch_cloud(self):
-        for diff_key in ['9x9', '27x27', '81x81']:
+    def _fetch_cloud_step(self):
+        if self._cloud_idx >= len(DIFFICULTY_LABELS):
+            return
+        diff_key = DIFFICULTY_LABELS[self._cloud_idx][0]
+        self._cloud_idx += 1
+        def do_fetch():
             online = _gitee_fetch_rankings(diff_key, 50) or []
             local = get_rankings_local(diff_key)
             seen = set()
@@ -95,4 +100,6 @@ class RankingWindow(tk.Toplevel):
             merged.sort(key=lambda x: x.get('time_seconds', 99999))
             tree = self._trees.get(diff_key)
             if tree and tree.winfo_exists():
-                tree.after(0, lambda t=tree, d=diff_key, m=merged: self._populate_tree(t, d, m))
+                self._populate_tree(tree, merged)
+        self.after(50, do_fetch)
+        self.after(300, self._fetch_cloud_step)
