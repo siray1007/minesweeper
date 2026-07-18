@@ -5,10 +5,11 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import random,threading,os,colorsys
 from database import save_ranking, _gitee_append_ranking
+from lang import t
 
 _BOMB_PNG=os.path.join(os.path.dirname(os.path.abspath(__file__)),'bomb16.png')
 NUM_COLORS={1:'#0000FF',2:'#008000',3:'#FF0000',4:'#000080',5:'#800000',6:'#008080',7:'#000000',8:'#808080'}
-DIFFICULTY_CONFIG={'9x9':{'rows':9,'cols':9,'mines':10,'cell':48,'title':'简单 9×9'},'27x27':{'rows':27,'cols':27,'mines':100,'cell':20,'title':'进阶 27×27'},'81x81':{'rows':81,'cols':81,'mines':800,'cell':14,'title':'困难 81×81'}}
+DIFFICULTY_CONFIG={'9x9':{'rows':9,'cols':9,'mines':10,'cell':48,'title':t('easy_title')},'27x27':{'rows':27,'cols':27,'mines':100,'cell':20,'title':t('medium_title')},'81x81':{'rows':81,'cols':81,'mines':800,'cell':14,'title':t('hard_title')}}
 
 def _random_pastel():
     h=random.random();s=random.uniform(0.25,0.45);v=random.uniform(0.75,0.90)
@@ -115,7 +116,7 @@ class GameFrame(tk.Frame):
         elif self.difficulty=='27x27':root.geometry("680x730")
         else:root.geometry("540x640")
         root.minsize(400,350);root.resizable(True,True)
-        root.title(f"扫雷 - {self.cfg['title']} - {self.user['username']}")
+        root.title(f"{t('title')} - {self.cfg['title']} - {self.user['username']}")
         root.bind('<Configure>',self._on_resize)
     def _on_resize(self,event):
         root=self.winfo_toplevel()
@@ -133,7 +134,7 @@ class GameFrame(tk.Frame):
             self._redraw()
     def _build_ui(self):
         bar=tk.Frame(self,bg='#d0d0d0',height=48);bar.pack(fill=tk.X,padx=3,pady=(3,0));bar.pack_propagate(False)
-        ttk.Button(bar,text="← 返回",command=self._back).pack(side=tk.LEFT,padx=6,pady=4)
+        ttk.Button(bar,text=t('btn_back'),command=self._back).pack(side=tk.LEFT,padx=6,pady=4)
         if os.path.exists(_BOMB_PNG):
             self._bomb_counter_img=tk.PhotoImage(file=_BOMB_PNG)
             tk.Label(bar,image=self._bomb_counter_img,bg='#d0d0d0').pack(side=tk.LEFT,padx=(10,2))
@@ -144,7 +145,7 @@ class GameFrame(tk.Frame):
         if self.difficulty=='81x81':self._build_large_board()
         else:self._build_small_board()
         bottom=tk.Frame(self,bg='#e0e0e0');bottom.pack(fill=tk.X,padx=10,pady=8)
-        ttk.Button(bottom,text="🔄 重新开始",command=self.restart).pack(side=tk.LEFT,padx=5)
+        ttk.Button(bottom,text=t('btn_restart'),command=self.restart).pack(side=tk.LEFT,padx=5)
     def _build_small_board(self):
         w=self.cfg['cols']*self.cell_size;h=self.cfg['rows']*self.cell_size
         self.canvas=tk.Canvas(self,width=w,height=h,bg='#bdbdbd',highlightthickness=0,cursor='crosshair')
@@ -235,7 +236,7 @@ class GameFrame(tk.Frame):
         if r is None:return
         if not self.timer_running:self._start_timer()
         result=self.game.reveal(r,c);self._redraw();self._update_mine_label()
-        if result=='game_over':self._stop_timer();self._reveal_all_mines();self.after(200,lambda:messagebox.showinfo("游戏结束","💥 你踩到地雷了！\n游戏结束！"))
+        if result=='game_over':self._stop_timer();self._reveal_all_mines();self.after(200,lambda:messagebox.showinfo(t('game_over'),t('game_over_msg')))
         elif result=='win':self._stop_timer();self.after(200,self._on_win)
     def _right_click(self,event):
         if self.game.game_over or self.game.game_won:return
@@ -248,7 +249,7 @@ class GameFrame(tk.Frame):
         if r is None:return
         if not self.game.revealed[r][c]:return
         result=self.game.chord(r,c);self._redraw();self._update_mine_label()
-        if result=='game_over':self._stop_timer();self._reveal_all_mines();self.after(200,lambda:messagebox.showinfo("游戏结束","💥 你踩到地雷了！\n游戏结束！"))
+        if result=='game_over':self._stop_timer();self._reveal_all_mines();self.after(200,lambda:messagebox.showinfo(t('game_over'),t('game_over_msg')))
         elif result=='win':self._stop_timer();self.after(200,self._on_win)
     def _redraw(self):
         if self.difficulty=='81x81':self._draw_large()
@@ -271,7 +272,7 @@ class GameFrame(tk.Frame):
     def _on_win(self):
         save_ranking(self.user['id'],self.difficulty,self.timer_seconds)
         m,s=divmod(self.timer_seconds,60)
-        messagebox.showinfo("恭喜胜利！",f"🎉 你赢了！\n\n难度：{self.cfg['title']}\n用时：{m:02d}:{s:02d}\n\n成绩已记录到排行榜！")
+        messagebox.showinfo(t('win_title'),t('win_msg',self.cfg['title'],f"{m:02d}:{s:02d}"))
         threading.Thread(target=_gitee_append_ranking,args=(self.user['username'],self.difficulty,self.timer_seconds),daemon=True).start()
     def _back(self):
         self._stop_timer();root=self.winfo_toplevel();root.unbind('<Configure>');self.on_back()
