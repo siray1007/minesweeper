@@ -5,6 +5,9 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+_ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '扫雷图标.png')
+
 from database import init_db
 from auth import AuthFrame
 from game import GameFrame, DIFFICULTY_CONFIG
@@ -13,6 +16,9 @@ from ranking import RankingFrame
 class MainApp:
     def __init__(self):
         self.root=tk.Tk()
+        if os.path.exists(_ICON_PATH):
+            self._icon=tk.PhotoImage(file=_ICON_PATH)
+            self.root.iconphoto(True,self._icon)
         self.root.title("扫雷游戏")
         self.root.geometry("520x500")
         self.root.minsize(420,380)
