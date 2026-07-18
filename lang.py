@@ -1,0 +1,143 @@
+"""
+扫雷游戏 - 多语言模块
+"""
+import os
+
+_LANG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lang_pref.txt')
+
+TEXTS = {
+    'zh': {
+        'title': '扫雷游戏', 'login': '登录账号', 'register': '注册新账号',
+        'username': '用户名', 'password': '密码', 'confirm_pwd': '确认密码',
+        'btn_login': '登 录', 'btn_register': '注 册',
+        'no_account': '还没有账号？', 'has_account': '已有账号？',
+        'to_register': '立即注册', 'to_login': '返回登录',
+        'warn_empty': '请输入用户名和密码！', 'login_fail': '登录失败',
+        'reg_fail': '注册失败', 'reg_ok': '注册成功！',
+        'pwd_mismatch': '两次密码输入不一致！', 'user_exists': '用户名已存在！',
+        'pwd_short': '密码至少需要 4 个字符！', 'user_short': '用户名至少需要 2 个字符！',
+        'pwd_hint': '密码（至少 4 位）',
+        'menu_title': '选择难度', 'welcome': '欢迎，{}！',
+        'diff_easy': '🟢 简单 9×9', 'diff_medium': '🟡 进阶 27×27', 'diff_hard': '🔴 困难 81×81',
+        'desc_easy': '10 个地雷 · 经典入门', 'desc_medium': '100 个地雷 · 高手进阶',
+        'desc_hard': '800 个地雷 · 极限挑战',
+        'btn_start': '开始游戏', 'btn_ranking': '🏆 排行榜', 'btn_logout': '🚪 登出',
+        'btn_back': '← 返回', 'btn_restart': '🔄 重新开始',
+        'game_over': '游戏结束', 'game_over_msg': '💥 你踩到地雷了！\n游戏结束！',
+        'win_title': '恭喜胜利！', 'win_msg': '🎉 你赢了！\n\n难度：{}\n用时：{}\n\n成绩已记录到排行榜！',
+        'rank_title': '🏆 排行榜', 'my_records': '📋 我的战绩',
+        'rank_col': '排名', 'user_col': '用户名', 'time_col': '用时', 'date_col': '完成日期',
+        'no_data': '暂无记录', 'no_records': '暂无战绩',
+        'difficulty_col': '难度', 'current_user': '用户：{}',
+        'logout_confirm': '确定要登出吗？', 'quit_confirm': '确定要退出游戏吗？',
+        'easy_title': '简单 9×9', 'medium_title': '进阶 27×27', 'hard_title': '困难 81×81',
+        'mines': '地雷', 'btn_close': '关闭',
+    },
+    'en': {
+        'title': 'Minesweeper', 'login': 'Sign In', 'register': 'Sign Up',
+        'username': 'Username', 'password': 'Password', 'confirm_pwd': 'Confirm Password',
+        'btn_login': 'Sign In', 'btn_register': 'Sign Up',
+        'no_account': "Don't have an account?", 'has_account': 'Already have an account?',
+        'to_register': 'Sign Up', 'to_login': 'Back to Sign In',
+        'warn_empty': 'Please enter username and password!', 'login_fail': 'Login Failed',
+        'reg_fail': 'Registration Failed', 'reg_ok': 'Registration Successful!',
+        'pwd_mismatch': 'Passwords do not match!', 'user_exists': 'Username already exists!',
+        'pwd_short': 'Password must be at least 4 characters!', 'user_short': 'Username must be at least 2 characters!',
+        'pwd_hint': 'Password (min 4 chars)',
+        'menu_title': 'Select Difficulty', 'welcome': 'Welcome, {}!',
+        'diff_easy': '🟢 Easy 9×9', 'diff_medium': '🟡 Medium 27×27', 'diff_hard': '🔴 Hard 81×81',
+        'desc_easy': '10 mines · Beginner', 'desc_medium': '100 mines · Advanced',
+        'desc_hard': '800 mines · Extreme',
+        'btn_start': 'Start Game', 'btn_ranking': '🏆 Leaderboard', 'btn_logout': '🚪 Logout',
+        'btn_back': '← Back', 'btn_restart': '🔄 Restart',
+        'game_over': 'Game Over', 'game_over_msg': '💥 You hit a mine!\nGame Over!',
+        'win_title': 'You Win!', 'win_msg': '🎉 You Win!\n\nDifficulty: {}\nTime: {}\n\nScore recorded!',
+        'rank_title': '🏆 Leaderboard', 'my_records': '📋 My Records',
+        'rank_col': 'Rank', 'user_col': 'Username', 'time_col': 'Time', 'date_col': 'Date',
+        'no_data': 'No Records', 'no_records': 'No Records',
+        'difficulty_col': 'Difficulty', 'current_user': 'User: {}',
+        'logout_confirm': 'Are you sure you want to logout?', 'quit_confirm': 'Are you sure you want to quit?',
+        'easy_title': 'Easy 9×9', 'medium_title': 'Medium 27×27', 'hard_title': 'Hard 81×81',
+        'mines': 'Mines', 'btn_close': 'Close',
+    },
+    'ja': {
+        'title': 'マインスイーパー', 'login': 'ログイン', 'register': '新規登録',
+        'username': 'ユーザー名', 'password': 'パスワード', 'confirm_pwd': 'パスワード確認',
+        'btn_login': 'ログイン', 'btn_register': '登 録',
+        'no_account': 'アカウントをお持ちでない方？', 'has_account': 'アカウントをお持ちの方？',
+        'to_register': '新規登録', 'to_login': 'ログインへ',
+        'warn_empty': 'ユーザー名とパスワードを入力してください！', 'login_fail': 'ログイン失敗',
+        'reg_fail': '登録失敗', 'reg_ok': '登録成功！',
+        'pwd_mismatch': 'パスワードが一致しません！', 'user_exists': 'ユーザー名は既に存在します！',
+        'pwd_short': 'パスワードは4文字以上必要です！', 'user_short': 'ユーザー名は2文字以上必要です！',
+        'pwd_hint': 'パスワード（4文字以上）',
+        'menu_title': '難易度選択', 'welcome': 'ようこそ、{}！',
+        'diff_easy': '🟢 簡単 9×9', 'diff_medium': '🟡 普通 27×27', 'diff_hard': '🔴 難しい 81×81',
+        'desc_easy': '10個の地雷 · 入門', 'desc_medium': '100個の地雷 · 上級',
+        'desc_hard': '800個の地雷 · 極限',
+        'btn_start': 'ゲーム開始', 'btn_ranking': '🏆 ランキング', 'btn_logout': '🚪 ログアウト',
+        'btn_back': '← 戻る', 'btn_restart': '🔄 リスタート',
+        'game_over': 'ゲームオーバー', 'game_over_msg': '💥 地雷を踏んだ！\nゲームオーバー！',
+        'win_title': '勝利！', 'win_msg': '🎉 あなたの勝ち！\n\n難易度：{}\nタイム：{}\n\n記録を保存しました！',
+        'rank_title': '🏆 ランキング', 'my_records': '📋 自分の記録',
+        'rank_col': '順位', 'user_col': 'ユーザー名', 'time_col': 'タイム', 'date_col': '日付',
+        'no_data': '記録なし', 'no_records': '記録なし',
+        'difficulty_col': '難易度', 'current_user': 'ユーザー：{}',
+        'logout_confirm': 'ログアウトしますか？', 'quit_confirm': '終了しますか？',
+        'easy_title': '簡単 9×9', 'medium_title': '普通 27×27', 'hard_title': '難しい 81×81',
+        'mines': '地雷', 'btn_close': '閉じる',
+    },
+    'ko': {
+        'title': '지뢰찾기', 'login': '로그인', 'register': '회원가입',
+        'username': '사용자 이름', 'password': '비밀번호', 'confirm_pwd': '비밀번호 확인',
+        'btn_login': '로그인', 'btn_register': '가 입',
+        'no_account': '계정이 없으신가요?', 'has_account': '이미 계정이 있으신가요?',
+        'to_register': '회원가입', 'to_login': '로그인으로',
+        'warn_empty': '사용자 이름과 비밀번호를 입력하세요!', 'login_fail': '로그인 실패',
+        'reg_fail': '가입 실패', 'reg_ok': '가입 성공!',
+        'pwd_mismatch': '비밀번호가 일치하지 않습니다!', 'user_exists': '이미 존재하는 사용자입니다!',
+        'pwd_short': '비밀번호는 4자 이상이어야 합니다!', 'user_short': '사용자 이름은 2자 이상이어야 합니다!',
+        'pwd_hint': '비밀번호 (4자 이상)',
+        'menu_title': '난이도 선택', 'welcome': '환영합니다, {}!',
+        'diff_easy': '🟢 쉬움 9×9', 'diff_medium': '🟡 보통 27×27', 'diff_hard': '🔴 어려움 81×81',
+        'desc_easy': '10개 지뢰 · 입문', 'desc_medium': '100개 지뢰 · 고급',
+        'desc_hard': '800개 지뢰 · 극한',
+        'btn_start': '게임 시작', 'btn_ranking': '🏆 랭킹', 'btn_logout': '🚪 로그아웃',
+        'btn_back': '← 뒤로', 'btn_restart': '🔄 다시하기',
+        'game_over': '게임 오버', 'game_over_msg': '💥 지뢰를 밟았습니다!\n게임 오버!',
+        'win_title': '승리!', 'win_msg': '🎉 당신이 이겼습니다!\n\n난이도: {}\n시간: {}\n\n기록이 저장되었습니다!',
+        'rank_title': '🏆 랭킹', 'my_records': '📋 내 기록',
+        'rank_col': '순위', 'user_col': '사용자', 'time_col': '시간', 'date_col': '날짜',
+        'no_data': '기록 없음', 'no_records': '기록 없음',
+        'difficulty_col': '난이도', 'current_user': '사용자: {}',
+        'logout_confirm': '로그아웃 하시겠습니까?', 'quit_confirm': '종료하시겠습니까?',
+        'easy_title': '쉬움 9×9', 'medium_title': '보통 27×27', 'hard_title': '어려움 81×81',
+        'mines': '지뢰', 'btn_close': '닫기',
+    },
+}
+
+_current_lang = 'zh'
+
+def load_lang():
+    global _current_lang
+    try:
+        if os.path.exists(_LANG_FILE):
+            with open(_LANG_FILE, 'r', encoding='utf-8') as f:
+                lang = f.read().strip()
+                if lang in TEXTS: _current_lang = lang
+    except: pass
+
+def save_lang(lang):
+    global _current_lang
+    _current_lang = lang
+    with open(_LANG_FILE, 'w', encoding='utf-8') as f: f.write(lang)
+
+def t(key, *args):
+    text = TEXTS.get(_current_lang, TEXTS['zh']).get(key, key)
+    if args: return text.format(*args)
+    return text
+
+def get_lang(): return _current_lang
+
+LANG_OPTIONS = [('zh', '简体中文'), ('en', 'English'), ('ja', '日本語'), ('ko', '한국어')]
+load_lang()
