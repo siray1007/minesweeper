@@ -7,11 +7,20 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 _ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '扫雷图标.png')
+_BOMB_ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bomb32.png')
 
 from database import init_db
 from auth import AuthFrame
 from game import GameFrame, DIFFICULTY_CONFIG
 from ranking import RankingFrame
+
+def _bomb_label(parent, text, font, **kw):
+    f = tk.Frame(parent, bg=kw.get('bg', '#f0f0f0'))
+    if os.path.exists(_BOMB_ICON):
+        img = tk.PhotoImage(file=_BOMB_ICON); f.img = img
+        tk.Label(f, image=img, bg=kw.get('bg', '#f0f0f0')).pack(side=tk.LEFT, padx=(0, 6))
+    tk.Label(f, text=text, font=font, bg=kw.get('bg', '#f0f0f0'), fg=kw.get('fg', '#333')).pack(side=tk.LEFT)
+    return f
 
 class MainApp:
     def __init__(self):
@@ -42,7 +51,7 @@ class MainApp:
         self.root.geometry("520x500")
         if self.current_frame:self.current_frame.destroy()
         frame=tk.Frame(self.root,bg='#f0f0f0');self.current_frame=frame;frame.pack(fill=tk.BOTH,expand=True)
-        tk.Label(frame,text="💣 扫雷游戏",font=('微软雅黑',28,'bold'),bg='#f0f0f0',fg='#333').pack(pady=(30,5))
+        _bomb_label(frame, "扫雷游戏", ('微软雅黑', 28, 'bold'), bg='#f0f0f0', fg='#333').pack(pady=(30, 5))
         tk.Label(frame,text=f"欢迎，{self.current_user['username']}！",font=('微软雅黑',12),bg='#f0f0f0',fg='#666').pack(pady=(0,25))
         tk.Label(frame,text="—— 选择难度 ——",font=('微软雅黑',13,'bold'),bg='#f0f0f0',fg='#555').pack(pady=(0,15))
         row=tk.Frame(frame,bg='#f0f0f0');row.pack(pady=5)

@@ -3,7 +3,18 @@
 """
 import tkinter as tk
 from tkinter import ttk, messagebox
+import os
 from database import register_user, login_user
+
+_ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bomb32.png')
+
+def _bomb_label(parent, text, font, **kw):
+    f = tk.Frame(parent, bg=kw.get('bg', '#f0f0f0'))
+    if os.path.exists(_ICON):
+        img = tk.PhotoImage(file=_ICON); f.img = img
+        tk.Label(f, image=img, bg=kw.get('bg', '#f0f0f0')).pack(side=tk.LEFT, padx=(0,6))
+    tk.Label(f, text=text, font=font, bg=kw.get('bg', '#f0f0f0'), fg=kw.get('fg','#333')).pack(side=tk.LEFT)
+    return f
 
 class AuthFrame(tk.Frame):
     def __init__(self,parent,on_login):
@@ -13,7 +24,7 @@ class AuthFrame(tk.Frame):
         for w in self.winfo_children():w.destroy()
     def _show_login(self):
         self._clear()
-        tk.Label(self,text="💣 扫雷游戏",font=('微软雅黑',26,'bold'),bg='#f0f0f0',fg='#333').pack(pady=(50,5))
+        _bomb_label(self, "扫雷游戏", ('微软雅黑', 26, 'bold'), bg='#f0f0f0', fg='#333').pack(pady=(50,5))
         tk.Label(self,text="登录账号",font=('微软雅黑',14),bg='#f0f0f0',fg='#666').pack(pady=(0,25))
         f=tk.Frame(self,bg='#f0f0f0');f.pack()
         tk.Label(f,text="用户名",bg='#f0f0f0',font=('微软雅黑',10)).pack()
@@ -27,7 +38,7 @@ class AuthFrame(tk.Frame):
         self._pwd.bind('<Return>',lambda e:self._do_login())
     def _show_register(self):
         self._clear()
-        tk.Label(self,text="💣 扫雷游戏",font=('微软雅黑',26,'bold'),bg='#f0f0f0',fg='#333').pack(pady=(50,5))
+        _bomb_label(self, "扫雷游戏", ('微软雅黑', 26, 'bold'), bg='#f0f0f0', fg='#333').pack(pady=(50,5))
         tk.Label(self,text="注册新账号",font=('微软雅黑',14),bg='#f0f0f0',fg='#666').pack(pady=(0,25))
         f=tk.Frame(self,bg='#f0f0f0');f.pack()
         tk.Label(f,text="用户名",bg='#f0f0f0',font=('微软雅黑',10)).pack()
