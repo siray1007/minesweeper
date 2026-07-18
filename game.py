@@ -148,8 +148,7 @@ class GameFrame(tk.Frame):
                 if g.revealed[r][c]:
                     self.canvas.create_rectangle(x1,y1,x2,y2,fill='#d0d0d0',outline='#808080')
                     val=g.board[r][c]
-                    if val==-1:
-                        self.canvas.create_image(cx, cy, image=self._bomb_img(cs//2))
+                    if val==-1:self.canvas.create_text(cx,cy,text='💣',font=('Arial',cs//2))
                     elif val>0:self.canvas.create_text(cx,cy,text=str(val),font=('Arial',cs//2,'bold'),fill=NUM_COLORS.get(val,'#000'))
                 elif g.flagged[r][c]:
                     self.canvas.create_rectangle(x1,y1,x2,y2,fill='#c0c0c0',outline='#808080')
@@ -193,8 +192,7 @@ class GameFrame(tk.Frame):
                     self.canvas.create_rectangle(x1,y1,x2,y2,fill='#d8d8d8',outline='')
                     val=g.board[r][c]
                     if val==-1:
-                        if cs>=10:
-                            self.canvas.create_image(cx, cy, image=self._bomb_img(max(8,cs//2)))
+                        if cs>=10:self.canvas.create_text(cx,cy,text='💣',font=('Arial',max(8,cs//2)))
                     elif val>0:
                         if cs>=10:self.canvas.create_text(cx,cy,text=str(val),font=('Arial',max(8,cs//2),'bold'),fill=NUM_COLORS.get(val,'#000'))
                         else:
@@ -205,13 +203,6 @@ class GameFrame(tk.Frame):
                     if cs>=12:self.canvas.create_text(cx,cy,text='🚩',font=('Arial',max(8,cs//2)))
         fw=g.cols*cs;fh=g.rows*cs
         self.canvas.configure(width=fw,height=fh);self.scroll_canvas.configure(scrollregion=(0,0,fw,fh))
-    def _bomb_img(self, size):
-        if not hasattr(self,'_bomb_cache'):self._bomb_cache={}
-        if size not in self._bomb_cache:
-            from PIL import Image
-            img=Image.open(_BOMB_PNG).resize((size,size),Image.LANCZOS)
-            self._bomb_cache[size]=tk.PhotoImage(image=img)
-        return self._bomb_cache[size]
     def _zoom_in(self):self.zoom=min(3.0,self.zoom+0.25);self.zoom_label.config(text=f"{int(self.zoom*100)}%");self._draw_large()
     def _zoom_out(self):self.zoom=max(0.25,self.zoom-0.25);self.zoom_label.config(text=f"{int(self.zoom*100)}%");self._draw_large()
     def _zoom_reset(self):self.zoom=1.0;self.zoom_label.config(text="100%");self._draw_large()
