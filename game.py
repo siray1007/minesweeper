@@ -3,8 +3,10 @@
 """
 import tkinter as tk
 from tkinter import ttk, messagebox
-import random,threading
+import random,threading,os
 from database import save_ranking, _gitee_append_ranking
+
+_BOMB_PNG = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bomb16.png')
 
 NUM_COLORS={1:'#0000FF',2:'#008000',3:'#FF0000',4:'#000080',5:'#800000',6:'#008080',7:'#000000',8:'#808080'}
 DIFFICULTY_CONFIG={'9x9':{'rows':9,'cols':9,'mines':10,'cell':48,'title':'简单 9×9'},'27x27':{'rows':27,'cols':27,'mines':100,'cell':20,'title':'进阶 27×27'},'81x81':{'rows':81,'cols':81,'mines':800,'cell':14,'title':'困难 81×81'}}
@@ -119,7 +121,11 @@ class GameFrame(tk.Frame):
     def _build_ui(self):
         bar=tk.Frame(self,bg='#d0d0d0',height=48);bar.pack(fill=tk.X,padx=3,pady=(3,0));bar.pack_propagate(False)
         ttk.Button(bar,text="← 返回",command=self._back).pack(side=tk.LEFT,padx=6,pady=4)
-        self.mine_label=tk.Label(bar,font=('Consolas',15,'bold'),bg='#d0d0d0',fg='#333');self.mine_label.pack(side=tk.LEFT,padx=15)
+        if os.path.exists(_BOMB_PNG):
+            self._bomb_counter_img = tk.PhotoImage(file=_BOMB_PNG)
+            tk.Label(bar, image=self._bomb_counter_img, bg='#d0d0d0').pack(side=tk.LEFT, padx=(10,2))
+        self.mine_label=tk.Label(bar,font=('Consolas',15,'bold'),bg='#d0d0d0',fg='#333')
+        self.mine_label.pack(side=tk.LEFT)
         tk.Label(bar,text=self.cfg['title'],font=('微软雅黑',12),bg='#d0d0d0',fg='#555').pack(side=tk.LEFT,expand=True)
         self.timer_label=tk.Label(bar,text="⏱ 00:00",font=('Consolas',15,'bold'),bg='#d0d0d0',fg='#333');self.timer_label.pack(side=tk.RIGHT,padx=15)
         self._update_mine_label()
@@ -142,7 +148,8 @@ class GameFrame(tk.Frame):
                 if g.revealed[r][c]:
                     self.canvas.create_rectangle(x1,y1,x2,y2,fill='#d0d0d0',outline='#808080')
                     val=g.board[r][c]
-                    if val==-1:self.canvas.create_text(cx,cy,text='💣',font=('Arial',cs//2))
+                    if val==-1:
+                        self.canvas.create_image(cx, cy, image=self._bomb_img(cs//2))
                     elif val>0:self.canvas.create_text(cx,cy,text=str(val),font=('Arial',cs//2,'bold'),fill=NUM_COLORS.get(val,'#000'))
                 elif g.flagged[r][c]:
                     self.canvas.create_rectangle(x1,y1,x2,y2,fill='#c0c0c0',outline='#808080')
@@ -186,7 +193,8 @@ class GameFrame(tk.Frame):
                     self.canvas.create_rectangle(x1,y1,x2,y2,fill='#d8d8d8',outline='')
                     val=g.board[r][c]
                     if val==-1:
-                        if cs>=10:self.canvas.create_text(cx,cy,text='💣',font=('Arial',max(8,cs//2)))
+                        if cs>=10:
+                            self.canvas.create_image(cx, cy, image=self._bomb_img(max(8,cs//2)))
                     elif val>0:
                         if cs>=10:self.canvas.create_text(cx,cy,text=str(val),font=('Arial',max(8,cs//2),'bold'),fill=NUM_COLORS.get(val,'#000'))
                         else:
@@ -197,6 +205,13 @@ class GameFrame(tk.Frame):
                     if cs>=12:self.canvas.create_text(cx,cy,text='🚩',font=('Arial',max(8,cs//2)))
         fw=g.cols*cs;fh=g.rows*cs
         self.canvas.configure(width=fw,height=fh);self.scroll_canvas.configure(scrollregion=(0,0,fw,fh))
+    def _bomb_img(self, size):
+        if not hasattr(self,'_bomb_cache'):self._bomb_cache={}
+        if size not in self._bomb_cache:
+            from PIL import Image
+            img=Image.open(_BOMB_PNG).resize((size,size),Image.LANCZOS)
+            self._bomb_cache[size]=tk.PhotoImage(image=img)
+        return self._bomb_cache[size]
     def _zoom_in(self):self.zoom=min(3.0,self.zoom+0.25);self.zoom_label.config(text=f"{int(self.zoom*100)}%");self._draw_large()
     def _zoom_out(self):self.zoom=max(0.25,self.zoom-0.25);self.zoom_label.config(text=f"{int(self.zoom*100)}%");self._draw_large()
     def _zoom_reset(self):self.zoom=1.0;self.zoom_label.config(text="100%");self._draw_large()
@@ -242,7 +257,7 @@ class GameFrame(tk.Frame):
     def _stop_timer(self):
         self.timer_running=False
         if self._after_id:self.after_cancel(self._after_id);self._after_id=None
-    def _update_mine_label(self):self.mine_label.config(text=f"💣 {self.game.remaining_mines}")
+    def _update_mine_label(self):self.mine_label.config(text=str(self.game.remaining_mines))
     def _reveal_all_mines(self):
         g=self.game
         for r in range(g.rows):
