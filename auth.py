@@ -31,7 +31,7 @@ class AuthFrame(tk.Frame):
         cur_name = dict(LANG_OPTIONS).get(get_lang(), '简体中文')
         tk.Label(f, text=f'🌐 {cur_name}', font=('微软雅黑', 9, 'bold'), bg='#f0f0f0', fg='#555').pack(anchor='w')
         sorted_opts = sorted(LANG_OPTIONS, key=lambda x: x[0])
-        var = tk.StringVar()
+        var = tk.StringVar(value=cur_name)
         cb = ttk.Combobox(f, textvariable=var, values=[o[1] for o in sorted_opts], state='readonly', width=12, font=('微软雅黑', 9))
         cb.pack(pady=(2,0))
         def on_change(e=None):
