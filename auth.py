@@ -8,6 +8,7 @@ from database import register_user, login_user
 from lang import t, save_lang, LANG_OPTIONS, get_lang
 
 _ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bomb32.png')
+_BG = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bg_pattern.png')
 
 def _bomb_label(parent, text, font, **kw):
     f = tk.Frame(parent, bg=kw.get('bg', '#f0f0f0'))
@@ -20,7 +21,11 @@ def _bomb_label(parent, text, font, **kw):
 class AuthFrame(tk.Frame):
     def __init__(self, parent, on_login):
         super().__init__(parent, bg='#f0f0f0')
-        self.on_login = on_login; self._show_login()
+        self.on_login = on_login
+        if os.path.exists(_BG):
+            self._bg = tk.PhotoImage(file=_BG)
+            tk.Label(self, image=self._bg, bg='#f0f0f0').place(x=0,y=0,relwidth=1,relheight=1)
+        self._show_login()
     def _clear(self):
         for w in self.winfo_children(): w.destroy()
     def _lang_selector(self):
