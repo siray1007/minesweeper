@@ -1,6 +1,4 @@
-"""
-扫雷游戏 - 核心模块（嵌入主窗口）
-"""
+"""扫雷游戏 - 核心模块（嵌入主窗口）"""
 import tkinter as tk
 from tkinter import ttk, messagebox
 import random,threading,os,colorsys
@@ -15,7 +13,6 @@ def _random_pastel():
     h=random.random();s=random.uniform(0.25,0.45);v=random.uniform(0.75,0.90)
     r,g,b=colorsys.hsv_to_rgb(h,s,v)
     return (int(r*255),int(g*255),int(b*255))
-
 def _cell_color(c1,c2,t):
     r=int(c1[0]+(c2[0]-c1[0])*t);g=int(c1[1]+(c2[1]-c1[1])*t);b=int(c1[2]+(c2[2]-c1[2])*t)
     return f'#{r:02x}{g:02x}{b:02x}'
@@ -108,8 +105,7 @@ class GameFrame(tk.Frame):
     def _gen_colors(self):
         self._grad_c1=_random_pastel();self._grad_c2=_random_pastel()
         self._grad_max=max(self.cfg['rows']+self.cfg['cols']-2,1)
-    def _grad(self,r,c):
-        return _cell_color(self._grad_c1,self._grad_c2,(r+c)/self._grad_max)
+    def _grad(self,r,c):return _cell_color(self._grad_c1,self._grad_c2,(r+c)/self._grad_max)
     def _apply_window_size(self):
         root=self.winfo_toplevel()
         if self.difficulty=='81x81':root.geometry("960x740")
@@ -157,6 +153,9 @@ class GameFrame(tk.Frame):
         self.canvas.delete('all');cs=self.cell_size;g=self.game
         for r in range(g.rows):
             for c in range(g.cols):
+                if (r+c)%2==0:self.canvas.create_rectangle(c*cs,r*cs,(c+1)*cs,(r+1)*cs,fill='#c4c4c4',outline='')
+        for r in range(g.rows):
+            for c in range(g.cols):
                 x1,y1=c*cs,r*cs;x2,y2=x1+cs,y1+cs;cx,cy=x1+cs//2,y1+cs//2
                 if g.revealed[r][c]:
                     self.canvas.create_rectangle(x1,y1,x2,y2,fill='#ffffff',outline='#ccc')
@@ -195,6 +194,9 @@ class GameFrame(tk.Frame):
         self.canvas.bind('<MouseWheel>',self._on_mousewheel);self._draw_large()
     def _draw_large(self):
         self.canvas.delete('all');cs=max(2,int(self.cell_size*self.zoom));self._actual_cs=cs;g=self.game
+        for r in range(g.rows):
+            for c in range(g.cols):
+                if (r+c)%2==0:self.canvas.create_rectangle(c*cs,r*cs,(c+1)*cs,(r+1)*cs,fill='#c4c4c4',outline='')
         for r in range(g.rows):
             for c in range(g.cols):
                 x1,y1=c*cs+1,r*cs+1;x2,y2=x1+cs-2,y1+cs-2;cx,cy=x1+(cs-2)//2,y1+(cs-2)//2
