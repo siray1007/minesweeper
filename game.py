@@ -16,6 +16,10 @@ def _random_pastel():
 def _cell_color(c1,c2,t):
     r=int(c1[0]+(c2[0]-c1[0])*t);g=int(c1[1]+(c2[1]-c1[1])*t);b=int(c1[2]+(c2[2]-c1[2])*t)
     return f'#{r:02x}{g:02x}{b:02x}'
+def _lighten(hex_color,amount):
+    r=int(hex_color[1:3],16);g=int(hex_color[3:5],16);b=int(hex_color[5:7],16)
+    r=min(255,int(r+255*amount));g=min(255,int(g+255*amount));b=min(255,int(b+255*amount))
+    return f'#{r:02x}{g:02x}{b:02x}'
 
 class MinesweeperGame:
     def __init__(self,difficulty:str):
@@ -153,9 +157,6 @@ class GameFrame(tk.Frame):
         self.canvas.delete('all');cs=self.cell_size;g=self.game
         for r in range(g.rows):
             for c in range(g.cols):
-                if (r+c)%2==0:self.canvas.create_rectangle(c*cs,r*cs,(c+1)*cs,(r+1)*cs,fill='#c4c4c4',outline='')
-        for r in range(g.rows):
-            for c in range(g.cols):
                 x1,y1=c*cs,r*cs;x2,y2=x1+cs,y1+cs;cx,cy=x1+cs//2,y1+cs//2
                 if g.revealed[r][c]:
                     self.canvas.create_rectangle(x1,y1,x2,y2,fill='#ffffff',outline='#ccc')
@@ -163,11 +164,11 @@ class GameFrame(tk.Frame):
                     if val==-1:self.canvas.create_text(cx,cy,text='💣',font=('Arial',cs//2))
                     elif val>0:self.canvas.create_text(cx,cy,text=str(val),font=('Arial',cs//2,'bold'),fill=NUM_COLORS.get(val,'#000'))
                 elif g.flagged[r][c]:
-                    clr=self._grad(r,c)
-                    self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='#999')
+                    clr=self._grad(r,c);self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='#999')
                     self.canvas.create_text(cx,cy,text='🚩',font=('Arial',cs//2))
                 else:
                     clr=self._grad(r,c)
+                    if(r+c)%2==1:clr=_lighten(clr,0.06)
                     self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='#999')
                     self.canvas.create_rectangle(x1+1,y1+1,x2-1,y2-1,fill=clr,outline='')
     def _build_large_board(self):
@@ -196,9 +197,6 @@ class GameFrame(tk.Frame):
         self.canvas.delete('all');cs=max(2,int(self.cell_size*self.zoom));self._actual_cs=cs;g=self.game
         for r in range(g.rows):
             for c in range(g.cols):
-                if (r+c)%2==0:self.canvas.create_rectangle(c*cs,r*cs,(c+1)*cs,(r+1)*cs,fill='#c4c4c4',outline='')
-        for r in range(g.rows):
-            for c in range(g.cols):
                 x1,y1=c*cs+1,r*cs+1;x2,y2=x1+cs-2,y1+cs-2;cx,cy=x1+(cs-2)//2,y1+(cs-2)//2
                 if g.revealed[r][c]:
                     self.canvas.create_rectangle(x1,y1,x2,y2,fill='#ffffff',outline='')
@@ -211,11 +209,11 @@ class GameFrame(tk.Frame):
                             clr={1:'#bbdefb',2:'#c8e6c9',3:'#ffcdd2',4:'#b39ddb',5:'#ffccbc',6:'#b2dfdb',7:'#cfd8dc',8:'#d7ccc8'}.get(val,'#d8d8d8')
                             self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='')
                 elif g.flagged[r][c]:
-                    clr=self._grad(r,c)
-                    self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='')
+                    clr=self._grad(r,c);self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='')
                     if cs>=12:self.canvas.create_text(cx,cy,text='🚩',font=('Arial',max(8,cs//2)))
                 else:
                     clr=self._grad(r,c)
+                    if(r+c)%2==1:clr=_lighten(clr,0.06)
                     self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='')
         fw=g.cols*cs;fh=g.rows*cs
         self.canvas.configure(width=fw,height=fh);self.scroll_canvas.configure(scrollregion=(0,0,fw,fh))
