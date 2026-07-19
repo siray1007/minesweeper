@@ -233,7 +233,7 @@ def t(key, *args):
 
 def get_lang(): return _current_lang
 
-LANG_OPTIONS = [
+_OPTS = [
     ('zh', '中文-简体中文'),
     ('zt', '中文-繁體中文'),
     ('wy', '中文-文言文'),
@@ -244,4 +244,5 @@ LANG_OPTIONS = [
     ('ko', '한국어'),
     ('ru', 'Русский'),
 ]
+LANG_OPTIONS = sorted(_OPTS, key=lambda x: x[1])
 load_lang()
