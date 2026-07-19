@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 _ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '扫雷图标.png')
 _BOMB_ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bomb32.png')
+_BG_PATTERN = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bg_pattern.png')
 
 from database import init_db
 from auth import AuthFrame
@@ -23,6 +24,11 @@ def _bomb_label(parent, text, font, **kw):
     tk.Label(f, text=text, font=font, bg=kw.get('bg', '#f0f0f0'), fg=kw.get('fg', '#333')).pack(side=tk.LEFT)
     return f
 
+def add_bg_pattern(frame):
+    if os.path.exists(_BG_PATTERN):
+        img = tk.PhotoImage(file=_BG_PATTERN); frame._bg_img = img
+        tk.Label(frame, image=img, bg='#f0f0f0').place(x=0,y=0,relwidth=1,relheight=1)
+
 class MainApp:
     def __init__(self):
         self.root=tk.Tk()
@@ -34,6 +40,9 @@ class MainApp:
         self.root.minsize(420,380)
         self.root.resizable(True,True)
         self.root.configure(bg='#f0f0f0')
+        if os.path.exists(_BG_PATTERN):
+            self._bg = tk.PhotoImage(file=_BG_PATTERN)
+            tk.Label(self.root,image=self._bg,bg='#f0f0f0').place(x=0,y=0,relwidth=1,relheight=1)
         self.current_user=None;self.current_frame=None
         init_db();self._show_auth()
         self.root.protocol("WM_DELETE_WINDOW",self._quit)
@@ -52,6 +61,7 @@ class MainApp:
         self.root.geometry("520x500")
         if self.current_frame:self.current_frame.destroy()
         frame=tk.Frame(self.root,bg='#f0f0f0');self.current_frame=frame;frame.pack(fill=tk.BOTH,expand=True)
+        add_bg_pattern(frame)
         _bomb_label(frame,t('title'),('微软雅黑',28,'bold'),bg='#f0f0f0',fg='#333').pack(pady=(30,5))
         tk.Label(frame,text=t('welcome',self.current_user['username']),font=('微软雅黑',12),bg='#f0f0f0',fg='#666').pack(pady=(0,25))
         tk.Label(frame,text='—— '+t('menu_title')+' ——',font=('微软雅黑',13,'bold'),bg='#f0f0f0',fg='#555').pack(pady=(0,15))
