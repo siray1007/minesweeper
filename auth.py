@@ -1,6 +1,4 @@
-"""
-扫雷游戏 - 登录 / 注册模块（嵌入主窗口）
-"""
+"""扫雷游戏 - 登录 / 注册模块（嵌入主窗口）"""
 import tkinter as tk
 from tkinter import ttk, messagebox
 import os
@@ -30,13 +28,15 @@ class AuthFrame(tk.Frame):
         for w in self.winfo_children(): w.destroy()
     def _lang_selector(self):
         f = tk.Frame(self, bg='#f0f0f0'); f.place(x=10, y=10)
-        var = tk.StringVar(value=get_lang())
-        cb = ttk.Combobox(f, textvariable=var, values=[opt[1] for opt in LANG_OPTIONS], state='readonly', width=10, font=('微软雅黑',9))
-        cb.pack()
+        cur_name = dict(LANG_OPTIONS).get(get_lang(), '简体中文')
+        tk.Label(f, text=f'🌐 {cur_name}', font=('微软雅黑', 9, 'bold'), bg='#f0f0f0', fg='#555').pack(anchor='w')
+        sorted_opts = sorted(LANG_OPTIONS, key=lambda x: x[0])
+        var = tk.StringVar()
+        cb = ttk.Combobox(f, textvariable=var, values=[o[1] for o in sorted_opts], state='readonly', width=12, font=('微软雅黑', 9))
+        cb.pack(pady=(2,0))
         def on_change(e=None):
-            idx = [o[1] for o in LANG_OPTIONS].index(var.get())
-            save_lang(LANG_OPTIONS[idx][0])
-            self._refresh()
+            for code, name in sorted_opts:
+                if name == var.get(): save_lang(code); self._refresh(); break
         cb.bind('<<ComboboxSelected>>', on_change)
         return f
     def _refresh(self):
