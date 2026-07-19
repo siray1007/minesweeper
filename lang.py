@@ -244,5 +244,5 @@ _OPTS = [
     ('ko', '한국어'),
     ('ru', 'Русский'),
 ]
-LANG_OPTIONS = sorted(_OPTS, key=lambda x: x[1])
+LANG_OPTIONS = sorted(_OPTS, key=lambda x: (x[1].split('-')[0] if '-' in x[1] else x[1], x[1]))
 load_lang()
