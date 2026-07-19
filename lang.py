@@ -233,16 +233,15 @@ def t(key, *args):
 
 def get_lang(): return _current_lang
 
-_OPTS = [
+LANG_OPTIONS = [
+    ('de', 'Deutsch'),
+    ('en', 'English'),
+    ('fr', 'Français'),
+    ('ru', 'Русский'),
+    ('ja', '日本語'),
+    ('ko', '한국어'),
     ('zh', '中文-简体中文'),
     ('zt', '中文-繁體中文'),
     ('wy', '中文-文言文'),
-    ('en', 'English'),
-    ('fr', 'Français'),
-    ('de', 'Deutsch'),
-    ('ja', '日本語'),
-    ('ko', '한국어'),
-    ('ru', 'Русский'),
 ]
-LANG_OPTIONS = sorted(_OPTS, key=lambda x: (x[1].split('-')[0] if '-' in x[1] else x[1], x[1]))
 load_lang()
