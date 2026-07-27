@@ -1,4 +1,4 @@
-"""扫雷游戏 - 登录 / 注册模块（Uiverse 风格重制）"""
+"""扫雷游戏 - 登录 / 注册模块"""
 import tkinter as tk
 from tkinter import ttk, messagebox
 import os
@@ -17,59 +17,57 @@ class AuthFrame(tk.Frame):
         f = tk.Frame(self, bg='#0f0f23'); f.place(x=16, y=16)
         style = ttk.Style(); style.theme_use('clam')
         style.configure('Lang.TCombobox', fieldbackground='#1a1a2e', background='#16213e', foreground='#c0c0c0', arrowcolor='#a0a0b0', borderwidth=0)
-        style.map('Lang.TCombobox', fieldbackground=[('readonly', '#1a1a2e')], background=[('readonly', '#16213e')])
+        style.map('Lang.TCombobox', fieldbackground=[('readonly', '#1a1a2e')])
         names = [o[1] for o in LANG_OPTIONS]
-        cur_name = dict(LANG_OPTIONS).get(get_lang(), names[0])
-        var = tk.StringVar(value=cur_name)
-        cb = ttk.Combobox(f, textvariable=var, values=names, state='readonly', width=12, font=('Segoe UI', 9), style='Lang.TCombobox')
+        cur = dict(LANG_OPTIONS).get(get_lang(), names[0])
+        cb = ttk.Combobox(f, textvariable=tk.StringVar(value=cur), values=names, state='readonly', width=12, font=('Segoe UI', 9), style='Lang.TCombobox')
         cb.pack()
         def on_change(e=None):
             for code, name in LANG_OPTIONS:
-                if name == var.get(): save_lang(code); self._refresh(); break
+                if name == cb.get(): save_lang(code); self._refresh(); break
         cb.bind('<<ComboboxSelected>>', on_change)
-        return f
     def _refresh(self):
         if hasattr(self, '_user'): self._show_login()
         else: self._show_register()
-    def _card(self, width=400):
+    def _card(self):
         card = tk.Frame(self, bg='#0f3460', bd=0); inner = tk.Frame(card, bg='#16213e')
         inner.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
         return card, inner
     def _show_login(self):
         self._clear(); self._lang_selector()
-        card, f = self._card(); card.place(relx=0.5, rely=0.5, anchor='center', width=400, height=440)
+        card, f = self._card(); card.place(relx=0.5, rely=0.5, anchor='center', width=420, height=460)
         if os.path.exists(_ICON):
             img = tk.PhotoImage(file=_ICON); f.img = img
-            tk.Label(f, image=img, bg='#16213e').pack(pady=(30, 5))
-        tk.Label(f, text=t('title'), font=('微软雅黑', 24, 'bold'), bg='#16213e', fg='#e94560').pack()
-        tk.Label(f, text=t('login'), font=('微软雅黑', 13), bg='#16213e', fg='#a0a0b0').pack(pady=(0, 20))
+            tk.Label(f, image=img, bg='#16213e').pack(pady=(35, 5))
+        tk.Label(f, text=t('title'), font=('微软雅黑', 28, 'bold'), bg='#16213e', fg='#e94560').pack()
+        tk.Label(f, text=t('login'), font=('微软雅黑', 14), bg='#16213e', fg='#c0c0c0').pack(pady=(0, 25))
         ff = tk.Frame(f, bg='#16213e'); ff.pack(pady=10)
-        tk.Label(ff, text=t('username'), bg='#16213e', fg='#a0a0b0', font=('微软雅黑', 9), anchor='w').pack(fill=tk.X, padx=40)
-        self._user = tk.Entry(ff, width=32, font=('微软雅黑', 11), bg='#1a1a2e', fg='#e0e0e0', insertbackground='#e94560', relief='flat', bd=8)
-        self._user.pack(pady=(4, 12), padx=40); self._user.focus_set()
-        tk.Label(ff, text=t('password'), bg='#16213e', fg='#a0a0b0', font=('微软雅黑', 9), anchor='w').pack(fill=tk.X, padx=40)
-        self._pwd = tk.Entry(ff, width=32, font=('微软雅黑', 11), show='●', bg='#1a1a2e', fg='#e0e0e0', insertbackground='#e94560', relief='flat', bd=8)
-        self._pwd.pack(pady=(4, 16), padx=40)
-        tk.Button(ff, text=t('btn_login'), font=('微软雅黑', 11, 'bold'), bg='#e94560', fg='white', activebackground='#c73550', relief='flat', bd=0, padx=40, pady=8, cursor='hand2', command=self._do_login).pack(pady=(10, 8))
+        tk.Label(ff, text=t('username'), bg='#16213e', fg='#808090', font=('微软雅黑', 10), anchor='w').pack(fill=tk.X, padx=40)
+        self._user = tk.Entry(ff, width=30, font=('微软雅黑', 12), bg='#0a0a1a', fg='#e0e0e0', insertbackground='#e94560', relief='flat', bd=10)
+        self._user.pack(pady=(4, 14), padx=40); self._user.focus_set()
+        tk.Label(ff, text=t('password'), bg='#16213e', fg='#808090', font=('微软雅黑', 10), anchor='w').pack(fill=tk.X, padx=40)
+        self._pwd = tk.Entry(ff, width=30, font=('微软雅黑', 12), show='●', bg='#0a0a1a', fg='#e0e0e0', insertbackground='#e94560', relief='flat', bd=10)
+        self._pwd.pack(pady=(4, 20), padx=40)
+        tk.Button(ff, text=t('btn_login'), font=('微软雅黑', 12, 'bold'), bg='#e94560', fg='white', activebackground='#c73550', relief='flat', bd=0, padx=50, pady=10, cursor='hand2', command=self._do_login).pack(pady=(10, 8))
         link = tk.Frame(f, bg='#16213e'); link.pack()
         tk.Label(link, text=t('no_account'), bg='#16213e', fg='#707080', font=('微软雅黑', 9)).pack(side=tk.LEFT)
         tk.Button(link, text=t('to_register'), font=('微软雅黑', 9, 'bold'), bg='#16213e', fg='#e94560', activebackground='#16213e', relief='flat', bd=0, cursor='hand2', command=self._show_register).pack(side=tk.LEFT)
         self._pwd.bind('<Return>', lambda e: self._do_login())
     def _show_register(self):
         self._clear(); self._lang_selector()
-        card, f = self._card(); card.place(relx=0.5, rely=0.5, anchor='center', width=400, height=500)
+        card, f = self._card(); card.place(relx=0.5, rely=0.5, anchor='center', width=420, height=520)
         if os.path.exists(_ICON):
             img = tk.PhotoImage(file=_ICON); f.img = img
             tk.Label(f, image=img, bg='#16213e').pack(pady=(30, 5))
-        tk.Label(f, text=t('title'), font=('微软雅黑', 24, 'bold'), bg='#16213e', fg='#e94560').pack()
-        tk.Label(f, text=t('register'), font=('微软雅黑', 13), bg='#16213e', fg='#a0a0b0').pack(pady=(0, 20))
+        tk.Label(f, text=t('title'), font=('微软雅黑', 28, 'bold'), bg='#16213e', fg='#e94560').pack()
+        tk.Label(f, text=t('register'), font=('微软雅黑', 14), bg='#16213e', fg='#c0c0c0').pack(pady=(0, 20))
         ff = tk.Frame(f, bg='#16213e'); ff.pack(pady=5)
         for label_text, attr, show in [(t('username'), '_reg_user', False), (t('pwd_hint'), '_reg_pwd', True), (t('confirm_pwd'), '_reg_cfm', True)]:
-            tk.Label(ff, text=label_text, bg='#16213e', fg='#a0a0b0', font=('微软雅黑', 9), anchor='w').pack(fill=tk.X, padx=40)
-            entry = tk.Entry(ff, width=32, font=('微软雅黑', 11), bg='#1a1a2e', fg='#e0e0e0', insertbackground='#e94560', relief='flat', bd=8, show='●' if show else '')
-            entry.pack(pady=(4, 8), padx=40); setattr(self, attr, entry)
+            tk.Label(ff, text=label_text, bg='#16213e', fg='#808090', font=('微软雅黑', 10), anchor='w').pack(fill=tk.X, padx=40)
+            e = tk.Entry(ff, width=30, font=('微软雅黑', 12), bg='#0a0a1a', fg='#e0e0e0', insertbackground='#e94560', relief='flat', bd=10, show='●' if show else '')
+            e.pack(pady=(4, 8), padx=40); setattr(self, attr, e)
         self._reg_user.focus_set()
-        tk.Button(ff, text=t('btn_register'), font=('微软雅黑', 11, 'bold'), bg='#e94560', fg='white', activebackground='#c73550', relief='flat', bd=0, padx=40, pady=8, cursor='hand2', command=self._do_register).pack(pady=(10, 5))
+        tk.Button(ff, text=t('btn_register'), font=('微软雅黑', 12, 'bold'), bg='#e94560', fg='white', activebackground='#c73550', relief='flat', bd=0, padx=50, pady=10, cursor='hand2', command=self._do_register).pack(pady=(12, 5))
         link = tk.Frame(f, bg='#16213e'); link.pack()
         tk.Label(link, text=t('has_account'), bg='#16213e', fg='#707080', font=('微软雅黑', 9)).pack(side=tk.LEFT)
         tk.Button(link, text=t('to_login'), font=('微软雅黑', 9, 'bold'), bg='#16213e', fg='#e94560', activebackground='#16213e', relief='flat', bd=0, cursor='hand2', command=self._show_login).pack(side=tk.LEFT)
