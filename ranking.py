@@ -37,7 +37,7 @@ class RankingFrame(tk.Frame):
         sb=ttk.Scrollbar(parent,orient=tk.VERTICAL,command=tree.yview)
         tree.configure(yscrollcommand=sb.set)
         tree.pack(side=tk.LEFT,fill=tk.BOTH,expand=True);sb.pack(side=tk.RIGHT,fill=tk.Y)
-        tree.tag_configure('me',background='#e9456040',foreground='#e94560')
+        tree.tag_configure('me',foreground='#e94560')
         self._trees[difficulty]=tree
         self._populate_tree(tree,self._dedup_best(get_rankings_local(difficulty)))
     def _populate_tree(self,tree,rankings):
@@ -48,7 +48,7 @@ class RankingFrame(tk.Frame):
                 m,s=divmod(rec['time_seconds'],60)
                 tags=('me',) if rec['username']==self.current_user['username'] else ()
                 date=rec.get('completed_at') or rec.get('created_at','')
-                tree.insert('',tk.END,values=(i+1,rec['username'],f"{m:02d}:{s:02d}",date),tags=tags)
+                tree.insert('',tk.END,values=(i+1,rec['username'],f\"{m:02d}:{s:02d}\",date),tags=tags)
     def _build_my_records(self,parent):
         cols=('difficulty','time','date')
         tree=ttk.Treeview(parent,columns=cols,show='headings',height=15)
@@ -68,7 +68,7 @@ class RankingFrame(tk.Frame):
         if not all_records:tree.insert('',tk.END,values=('—',t('no_records'),'—'))
         else:
             for rec in all_records:
-                m,s=divmod(rec[1],60);tree.insert('',tk.END,values=(rec[0],f"{m:02d}:{s:02d}",rec[2]))
+                m,s=divmod(rec[1],60);tree.insert('',tk.END,values=(rec[0],f\"{m:02d}:{s:02d}\",rec[2]))
     def _fetch_cloud_step(self):
         if self._cloud_idx>=len(DIFFICULTY_LABELS):return
         diff_key=DIFFICULTY_LABELS[self._cloud_idx][0];self._cloud_idx+=1
