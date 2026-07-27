@@ -1,4 +1,4 @@
-# 🎮 扫雷游戏 Minesweeper
+# 🎮 扫雷
 
 经典扫雷 + 云端排行榜 + 9语言支持
 
@@ -9,7 +9,7 @@
 - 🎨 暗色主题 + 每局随机渐变棋盘
 - 🖱️ 双击Chord自动展开
 - ⌨️ 右键插旗
-- 📐 窗口自适应缩放、棋盘格纹理
+- 📐 窗口自适应缩放
 
 ## 下载
 👉 [最新Release](https://github.com/siray1007/minesweeper/releases)
