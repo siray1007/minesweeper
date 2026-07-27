@@ -8,7 +8,7 @@ DIFFICULTY_LABELS=[('9x9',t('diff_easy')),('27x27',t('diff_medium')),('81x81',t(
 
 class RankingFrame(tk.Frame):
     def __init__(self,parent,current_user:dict,on_back):
-        super().__init__(parent,bg='#1a1a2e')
+        super().__init__(parent,bg='#0f0f23')
         self.current_user=current_user;self.on_back=on_back
         self._trees={};self._cloud_idx=0
         self._build_ui();self.after(100,self._fetch_cloud_step)
@@ -48,7 +48,7 @@ class RankingFrame(tk.Frame):
                 m,s=divmod(rec['time_seconds'],60)
                 tags=('me',) if rec['username']==self.current_user['username'] else ()
                 date=rec.get('completed_at') or rec.get('created_at','')
-                tree.insert('',tk.END,values=(i+1,rec['username'],f\"{m:02d}:{s:02d}\",date),tags=tags)
+                tree.insert('',tk.END,values=(i+1,rec['username'],f"{m:02d}:{s:02d}",date),tags=tags)
     def _build_my_records(self,parent):
         cols=('difficulty','time','date')
         tree=ttk.Treeview(parent,columns=cols,show='headings',height=15)
@@ -68,7 +68,7 @@ class RankingFrame(tk.Frame):
         if not all_records:tree.insert('',tk.END,values=('—',t('no_records'),'—'))
         else:
             for rec in all_records:
-                m,s=divmod(rec[1],60);tree.insert('',tk.END,values=(rec[0],f\"{m:02d}:{s:02d}\",rec[2]))
+                m,s=divmod(rec[1],60);tree.insert('',tk.END,values=(rec[0],f"{m:02d}:{s:02d}",rec[2]))
     def _fetch_cloud_step(self):
         if self._cloud_idx>=len(DIFFICULTY_LABELS):return
         diff_key=DIFFICULTY_LABELS[self._cloud_idx][0];self._cloud_idx+=1

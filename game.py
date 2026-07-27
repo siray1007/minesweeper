@@ -101,7 +101,7 @@ class MinesweeperGame:
 
 class GameFrame(tk.Frame):
     def __init__(self,parent,user:dict,difficulty:str,on_back):
-        super().__init__(parent,bg='#1a1a2e')
+        super().__init__(parent,bg='#0f0f23')
         self.user=user;self.difficulty=difficulty;self.on_back=on_back
         self.cfg=DIFFICULTY_CONFIG[difficulty];self.game=MinesweeperGame(difficulty)
         self.cell_size=self.cfg['cell'];self.timer_running=False;self.timer_seconds=0;self._after_id=None;self.zoom=1.0
@@ -144,7 +144,7 @@ class GameFrame(tk.Frame):
         self._update_mine_label()
         if self.difficulty=='81x81':self._build_large_board()
         else:self._build_small_board()
-        bottom=tk.Frame(self,bg='#1a1a2e');bottom.pack(fill=tk.X,padx=10,pady=8)
+        bottom=tk.Frame(self,bg='#0f0f23');bottom.pack(fill=tk.X,padx=10,pady=8)
         ttk.Button(bottom,text=t('btn_restart'),command=self.restart).pack(side=tk.LEFT,padx=5)
     def _build_small_board(self):
         w=self.cfg['cols']*self.cell_size;h=self.cfg['rows']*self.cell_size
@@ -169,10 +169,10 @@ class GameFrame(tk.Frame):
                 else:
                     clr=self._grad(r,c)
                     if(r+c)%2==1:clr=_lighten(clr,0.06)
-                    self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='#1a1a2e')
+                    self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='#0f0f23')
                     self.canvas.create_rectangle(x1+1,y1+1,x2-1,y2-1,fill=clr,outline='')
     def _build_large_board(self):
-        outer=tk.Frame(self,bg='#1a1a2e');outer.pack(fill=tk.BOTH,expand=True,padx=8,pady=8)
+        outer=tk.Frame(self,bg='#0f0f23');outer.pack(fill=tk.BOTH,expand=True,padx=8,pady=8)
         outer.grid_rowconfigure(0,weight=1);outer.grid_columnconfigure(0,weight=1)
         cw=min(self.cfg['cols']*self.cell_size,780);ch=min(self.cfg['rows']*self.cell_size,560)
         self.scroll_canvas=tk.Canvas(outer,width=cw,height=ch,bg='#0a0a1a',highlightthickness=0)
@@ -187,9 +187,9 @@ class GameFrame(tk.Frame):
         self.scroll_canvas.configure(scrollregion=(0,0,fw,fh))
         self.canvas.bind('<Button-1>',self._left_click);self.canvas.bind('<Double-Button-1>',self._double_click)
         self.canvas.bind('<Button-3>',self._right_click);self.canvas.bind('<Button-2>',self._right_click)
-        zf=tk.Frame(self,bg='#1a1a2e');zf.pack(fill=tk.X,padx=8,pady=(0,5))
+        zf=tk.Frame(self,bg='#0f0f23');zf.pack(fill=tk.X,padx=8,pady=(0,5))
         ttk.Button(zf,text="🔍−",command=self._zoom_out,width=4).pack(side=tk.LEFT,padx=2)
-        self.zoom_label=tk.Label(zf,text="100%",font=('微软雅黑',9),bg='#1a1a2e',fg='#a0a0b0',width=5);self.zoom_label.pack(side=tk.LEFT,padx=4)
+        self.zoom_label=tk.Label(zf,text="100%",font=('微软雅黑',9),bg='#0f0f23',fg='#a0a0b0',width=5);self.zoom_label.pack(side=tk.LEFT,padx=4)
         ttk.Button(zf,text="🔍+",command=self._zoom_in,width=4).pack(side=tk.LEFT,padx=2)
         ttk.Button(zf,text="适应窗口",command=self._zoom_reset,width=9).pack(side=tk.LEFT,padx=10)
         self.canvas.bind('<MouseWheel>',self._on_mousewheel);self._draw_large()
