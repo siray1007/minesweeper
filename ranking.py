@@ -1,4 +1,4 @@
-"""扫雷游戏 - 排行榜模块（暗色主题）"""
+"""掃雷遊戲 - 排行榜模塊（暗色主題）"""
 import tkinter as tk
 from tkinter import ttk
 from database import get_rankings_local, _gitee_fetch_rankings
@@ -6,9 +6,23 @@ from lang import t
 
 DIFFICULTY_LABELS=[('9x9',t('diff_easy')),('27x27',t('diff_medium')),('81x81',t('diff_hard'))]
 
+def _dark_theme():
+    style=ttk.Style();style.theme_use('clam')
+    style.configure('Treeview',background='#1a1a2e',foreground='#c0c0c0',fieldbackground='#1a1a2e',borderwidth=0)
+    style.configure('Treeview.Heading',background='#16213e',foreground='#a0a0b0',relief='flat',borderwidth=0)
+    style.map('Treeview',background=[('selected','#e94560')])
+    style.map('Treeview.Heading',background=[('active','#0f3460')])
+    style.configure('TNotebook',background='#0f0f23',borderwidth=0)
+    style.configure('TNotebook.Tab',background='#16213e',foreground='#a0a0b0',padding=(16,6),borderwidth=0)
+    style.map('TNotebook.Tab',background=[('selected','#1a1a2e')],foreground=[('selected','#e94560')])
+    style.configure('Vertical.TScrollbar',background='#16213e',troughcolor='#0f0f23',borderwidth=0,arrowcolor='#a0a0b0')
+    style.configure('TButton',background='#16213e',foreground='#a0a0b0',borderwidth=0,padding=6)
+    style.map('TButton',background=[('active','#0f3460')])
+
 class RankingFrame(tk.Frame):
     def __init__(self,parent,current_user:dict,on_back):
         super().__init__(parent,bg='#0f0f23')
+        _dark_theme()
         self.current_user=current_user;self.on_back=on_back
         self._trees={};self._cloud_idx=0
         self._build_ui();self.after(100,self._fetch_cloud_step)

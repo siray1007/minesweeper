@@ -15,10 +15,13 @@ class AuthFrame(tk.Frame):
         for w in self.winfo_children(): w.destroy()
     def _lang_selector(self):
         f = tk.Frame(self, bg='#0f0f23'); f.place(x=16, y=16)
+        style = ttk.Style(); style.theme_use('clam')
+        style.configure('Lang.TCombobox', fieldbackground='#1a1a2e', background='#16213e', foreground='#c0c0c0', arrowcolor='#a0a0b0', borderwidth=0)
+        style.map('Lang.TCombobox', fieldbackground=[('readonly', '#1a1a2e')], background=[('readonly', '#16213e')])
         names = [o[1] for o in LANG_OPTIONS]
         cur_name = dict(LANG_OPTIONS).get(get_lang(), names[0])
         var = tk.StringVar(value=cur_name)
-        cb = ttk.Combobox(f, textvariable=var, values=names, state='readonly', width=12, font=('Segoe UI', 9))
+        cb = ttk.Combobox(f, textvariable=var, values=names, state='readonly', width=12, font=('Segoe UI', 9), style='Lang.TCombobox')
         cb.pack()
         def on_change(e=None):
             for code, name in LANG_OPTIONS:

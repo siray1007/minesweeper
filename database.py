@@ -1,7 +1,7 @@
 """
 扫雷游戏 - 数据库模块
 本地 SQLite：用户认证
-云端 Gitee：排行榜（rankings.json）
+云端 Gitee：排行榜
 """
 import sqlite3,hashlib,os,sys,json,base64,urllib.request,urllib.error
 from datetime import datetime
@@ -60,17 +60,6 @@ def get_rankings_local(difficulty:str,limit:int=50)->list:
     c.execute('''SELECT u.username,r.time_seconds,r.completed_at,r.user_id FROM rankings r JOIN users u ON r.user_id=u.id WHERE r.difficulty=? ORDER BY r.time_seconds ASC LIMIT ?''',(difficulty,limit))
     results=[dict(row) for row in c.fetchall()];conn.close()
     return results
-
-def get_rankings(difficulty:str,limit:int=50)->list:
-    online=_gitee_fetch_rankings(difficulty,limit) or []
-    local=get_rankings_local(difficulty,limit)
-    seen=set();merged=[]
-    for r in online:key=(r['username'],r['time_seconds']);seen.add(key);merged.append(r)
-    for r in local:
-        key=(r['username'],r['time_seconds'])
-        if key not in seen:seen.add(key);merged.append(r)
-    merged.sort(key=lambda x:x.get('time_seconds',99999))
-    return merged[:limit]
 
 def _gitee_fetch_rankings(difficulty:str,limit:int)->list|None:
     try:
