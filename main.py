@@ -1,4 +1,6 @@
-"""扫雷游戏 - 主入口"""
+"""
+扫雷 - 主入口
+"""
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sys, os
