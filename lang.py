@@ -5,7 +5,7 @@ _LANG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lang_pref
 
 TEXTS = {
     'zh': {
-        'title': '扫雷游戏', 'login': '登录账号', 'register': '注册新账号',
+        'title': '扫雷', 'login': '登录账号', 'register': '注册新账号',
         'username': '用户名', 'password': '密码', 'confirm_pwd': '确认密码',
         'btn_login': '登 录', 'btn_register': '注 册', 'no_account': '还没有账号？',
         'has_account': '已有账号？', 'to_register': '立即注册', 'to_login': '返回登录',
@@ -27,7 +27,7 @@ TEXTS = {
         'mines': '地雷', 'btn_close': '关闭',
     },
     'zt': {
-        'title': '掃雷遊戲', 'login': '登入帳號', 'register': '註冊新帳',
+        'title': '掃雷', 'login': '登入帳號', 'register': '註冊新帳',
         'username': '使用者名稱', 'password': '密碼', 'confirm_pwd': '確認密碼',
         'btn_login': '登 入', 'btn_register': '註 冊', 'no_account': '還沒有帳號？',
         'has_account': '已有帳號？', 'to_register': '立即註冊', 'to_login': '返回登入',
@@ -187,7 +187,7 @@ TEXTS = {
         'mines': '지뢰', 'btn_close': '닫기',
     },
     'wy': {
-        'title': '掃雷之戲', 'login': '登入賬號', 'register': '註冊新賬',
+        'title': '掃雷', 'login': '登入賬號', 'register': '註冊新賬',
         'username': '名號', 'password': '暗碼', 'confirm_pwd': '確認暗碼',
         'btn_login': '登 入', 'btn_register': '註 冊', 'no_account': '未有賬號乎？',
         'has_account': '已有賬號乎？', 'to_register': '前往註冊', 'to_login': '返回登入',
