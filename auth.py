@@ -9,25 +9,12 @@ _ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bomb32.png')
 
 class AuthFrame(tk.Frame):
     def __init__(self, parent, on_login):
-        super().__init__(parent, bg='#1a1a2e')
-        self.on_login = on_login
-        self._build_bg(); self._show_login()
-    def _build_bg(self):
-        c = tk.Canvas(self, bg='#1a1a2e', highlightthickness=0)
-        c.place(x=0, y=0, relwidth=1, relheight=1)
-        w = self.winfo_screenwidth(); h = self.winfo_screenheight()
-        for i in range(30):
-            t_val = i / 30
-            r = int(26 + (22-26)*t_val); g = int(26 + (33-26)*t_val); b = int(46 + (66-46)*t_val)
-            color = f'#{r:02x}{g:02x}{b:02x}'
-            y1 = int(h * t_val); y2 = int(h * (t_val + 0.04))
-            c.create_rectangle(0, y1, w, y2, fill=color, outline='')
+        super().__init__(parent, bg='#0f0f23')
+        self.on_login = on_login; self._show_login()
     def _clear(self):
-        for w in self.winfo_children():
-            if isinstance(w, tk.Canvas): continue
-            w.destroy()
+        for w in self.winfo_children(): w.destroy()
     def _lang_selector(self):
-        f = tk.Frame(self, bg='#16213e'); f.place(x=16, y=16)
+        f = tk.Frame(self, bg='#0f0f23'); f.place(x=16, y=16)
         names = [o[1] for o in LANG_OPTIONS]
         cur_name = dict(LANG_OPTIONS).get(get_lang(), names[0])
         var = tk.StringVar(value=cur_name)
