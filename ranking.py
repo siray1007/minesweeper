@@ -5,24 +5,24 @@ import os
 from database import get_rankings_local, _gitee_fetch_rankings
 from lang import t
 
-_BG = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bg_crosshatch.png')
+_BG = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bg_gradient_rank.png')
 
 DIFFICULTY_LABELS = [('9x9',t('diff_easy')),('27x27',t('diff_medium')),('81x81',t('diff_hard'))]
 
 class RankingFrame(tk.Frame):
     def __init__(self, parent, current_user: dict, on_back):
-        super().__init__(parent, bg='#f5f5f5')
+        super().__init__(parent, bg='#f8f8fc')
         self.current_user = current_user; self.on_back = on_back
         self._trees = {}; self._cloud_idx = 0
         if os.path.exists(_BG):
             self._bg = tk.PhotoImage(file=_BG)
-            tk.Label(self, image=self._bg, bg='#f5f5f5').place(x=0,y=0,relwidth=1,relheight=1)
+            tk.Label(self, image=self._bg, bg='#f8f8fc').place(x=0,y=0,relwidth=1,relheight=1)
         self._build_ui(); self.after(100, self._fetch_cloud_step)
     def _build_ui(self):
-        bar = tk.Frame(self, bg='#e8e8e8', height=44); bar.pack(fill=tk.X); bar.pack_propagate(False)
+        bar = tk.Frame(self, bg='#e8e8ee', height=44); bar.pack(fill=tk.X); bar.pack_propagate(False)
         ttk.Button(bar, text=t('btn_back'), command=self.on_back).pack(side=tk.LEFT, padx=10, pady=6)
-        tk.Label(bar, text=t('rank_title'), font=('微软雅黑', 18, 'bold'), bg='#e8e8e8', fg='#333').pack(side=tk.LEFT, padx=5)
-        tk.Label(bar, text=t('current_user', self.current_user['username']), font=('微软雅黑', 9), bg='#e8e8e8', fg='#888').pack(side=tk.RIGHT, padx=15, pady=6)
+        tk.Label(bar, text=t('rank_title'), font=('微软雅黑', 18, 'bold'), bg='#e8e8ee', fg='#333').pack(side=tk.LEFT, padx=5)
+        tk.Label(bar, text=t('current_user', self.current_user['username']), font=('微软雅黑', 9), bg='#e8e8ee', fg='#888').pack(side=tk.RIGHT, padx=15, pady=6)
         nb = ttk.Notebook(self); nb.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         for diff_key, diff_label in DIFFICULTY_LABELS:
             frame = tk.Frame(nb, bg='#fafafa'); nb.add(frame, text=diff_label); self._build_table(frame, diff_key)
