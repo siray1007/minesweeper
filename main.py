@@ -40,11 +40,8 @@ class MainApp:
     def _show_menu(self):
         self.root.title(t('title'))
         self.root.geometry("600x620")
+        self.root.configure(bg='#0f0f23')
         if self.current_frame:self.current_frame.destroy()
-        c=tk.Canvas(self.root,bg='#0f0f23',highlightthickness=0)
-        c.place(x=0,y=0,relwidth=1,relheight=1)
-        c.create_oval(-100,-100,300,300,fill='#e9456020',outline='')
-        c.create_oval(400,400,800,800,fill='#0f346020',outline='')
         self.current_frame=tk.Frame(self.root,bg='#0f0f23')
         self.current_frame.pack(fill=tk.BOTH,expand=True)
         f=tk.Frame(self.current_frame,bg='#0f0f23');f.pack(expand=True)
