@@ -16,8 +16,8 @@ class AuthFrame(tk.Frame):
     def _lang_selector(self):
         f = tk.Frame(self, bg='#0f0f23'); f.place(x=16, y=16)
         style = ttk.Style(); style.theme_use('clam')
-        style.configure('Lang.TCombobox', fieldbackground='#1a1a2e', background='#16213e', foreground='#e0e0e0', arrowcolor='#a0a0b0', borderwidth=0)
-        style.map('Lang.TCombobox', fieldbackground=[('readonly', '#1a1a2e')], foreground=[('readonly', '#e0e0e0')], selectbackground=[('readonly', '#e94560')], selectforeground=[('readonly', 'white')])
+        style.configure('Lang.TCombobox', fieldbackground='#1a1a2e', background='#16213e', foreground='#e94560', arrowcolor='#a0a0b0', borderwidth=0)
+        style.map('Lang.TCombobox', fieldbackground=[('readonly', '#1a1a2e')], foreground=[('readonly', '#e94560')], selectbackground=[('readonly', '#e94560')], selectforeground=[('readonly', 'white')])
         root = self.winfo_toplevel()
         root.option_add('*TCombobox*Listbox.background', '#1a1a2e')
         root.option_add('*TCombobox*Listbox.foreground', '#e0e0e0')
