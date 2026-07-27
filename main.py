@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 _ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '扫雷图标.png')
 _BOMB_ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bomb32.png')
-_BG_PATTERN = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bg_crosshatch.png')
+_BG_PATTERN = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bg_gradient_menu.png')
 
 from database import init_db
 from auth import AuthFrame
@@ -17,17 +17,17 @@ from ranking import RankingFrame
 from lang import t
 
 def _bomb_label(parent, text, font, **kw):
-    f = tk.Frame(parent, bg=kw.get('bg', '#f0f0f0'))
+    f = tk.Frame(parent, bg=kw.get('bg', '#f5f2ee'))
     if os.path.exists(_BOMB_ICON):
         img = tk.PhotoImage(file=_BOMB_ICON); f.img = img
-        tk.Label(f, image=img, bg=kw.get('bg', '#f0f0f0')).pack(side=tk.LEFT, padx=(0, 6))
-    tk.Label(f, text=text, font=font, bg=kw.get('bg', '#f0f0f0'), fg=kw.get('fg', '#333')).pack(side=tk.LEFT)
+        tk.Label(f, image=img, bg=kw.get('bg', '#f5f2ee')).pack(side=tk.LEFT, padx=(0, 6))
+    tk.Label(f, text=text, font=font, bg=kw.get('bg', '#f5f2ee'), fg=kw.get('fg', '#333')).pack(side=tk.LEFT)
     return f
 
 def add_bg_pattern(frame):
     if os.path.exists(_BG_PATTERN):
         img = tk.PhotoImage(file=_BG_PATTERN); frame._bg_img = img
-        tk.Label(frame, image=img, bg='#f0f0f0').place(x=0,y=0,relwidth=1,relheight=1)
+        tk.Label(frame, image=img, bg='#f5f2ee').place(x=0,y=0,relwidth=1,relheight=1)
 
 class MainApp:
     def __init__(self):
@@ -39,10 +39,10 @@ class MainApp:
         self.root.geometry("520x500")
         self.root.minsize(420,380)
         self.root.resizable(True,True)
-        self.root.configure(bg='#f0f0f0')
+        self.root.configure(bg='#f5f2ee')
         if os.path.exists(_BG_PATTERN):
             self._bg = tk.PhotoImage(file=_BG_PATTERN)
-            tk.Label(self.root,image=self._bg,bg='#f0f0f0').place(x=0,y=0,relwidth=1,relheight=1)
+            tk.Label(self.root,image=self._bg,bg='#f5f2ee').place(x=0,y=0,relwidth=1,relheight=1)
         self.current_user=None;self.current_frame=None
         init_db();self._show_auth()
         self.root.protocol("WM_DELETE_WINDOW",self._quit)
@@ -60,12 +60,12 @@ class MainApp:
         self.root.title(t('title') + ' - ' + t('menu_title'))
         self.root.geometry("520x500")
         if self.current_frame:self.current_frame.destroy()
-        frame=tk.Frame(self.root,bg='#f0f0f0');self.current_frame=frame;frame.pack(fill=tk.BOTH,expand=True)
+        frame=tk.Frame(self.root,bg='#f5f2ee');self.current_frame=frame;frame.pack(fill=tk.BOTH,expand=True)
         add_bg_pattern(frame)
-        _bomb_label(frame,t('title'),('微软雅黑',28,'bold'),bg='#f0f0f0',fg='#333').pack(pady=(30,5))
-        tk.Label(frame,text=t('welcome',self.current_user['username']),font=('微软雅黑',12),bg='#f0f0f0',fg='#666').pack(pady=(0,25))
-        tk.Label(frame,text='—— '+t('menu_title')+' ——',font=('微软雅黑',13,'bold'),bg='#f0f0f0',fg='#555').pack(pady=(0,15))
-        row=tk.Frame(frame,bg='#f0f0f0');row.pack(pady=5)
+        _bomb_label(frame,t('title'),('微软雅黑',28,'bold'),bg='#f5f2ee',fg='#333').pack(pady=(30,5))
+        tk.Label(frame,text=t('welcome',self.current_user['username']),font=('微软雅黑',12),bg='#f5f2ee',fg='#666').pack(pady=(0,25))
+        tk.Label(frame,text='—— '+t('menu_title')+' ——',font=('微软雅黑',13,'bold'),bg='#f5f2ee',fg='#888').pack(pady=(0,15))
+        row=tk.Frame(frame,bg='#f5f2ee');row.pack(pady=5)
         difficulties=[('9x9',t('diff_easy'),'#4CAF50',t('desc_easy')),('27x27',t('diff_medium'),'#FF9800',t('desc_medium')),('81x81',t('diff_hard'),'#F44336',t('desc_hard'))]
         for diff_key,label,color,desc in difficulties:
             card=tk.Frame(row,bg='white',bd=1,relief='solid',highlightbackground='#ddd',highlightthickness=1)
@@ -74,7 +74,7 @@ class MainApp:
             tk.Label(card,text=desc,font=('微软雅黑',9),bg='white',fg='#999').pack(pady=(0,8))
             btn=tk.Button(card,text=t('btn_start'),font=('微软雅黑',10,'bold'),bg=color,fg='white',activebackground=color,cursor='hand2',width=12,height=1,command=lambda d=diff_key:self._start_game(d))
             btn.pack(pady=(0,10))
-        bottom=tk.Frame(frame,bg='#f0f0f0');bottom.pack(pady=25)
+        bottom=tk.Frame(frame,bg='#f5f2ee');bottom.pack(pady=25)
         ttk.Button(bottom,text=t('btn_ranking'),command=self._show_ranking,width=15).pack(side=tk.LEFT,padx=10)
         ttk.Button(bottom,text=t('btn_logout'),command=self._logout,width=15).pack(side=tk.LEFT,padx=10)
     def _start_game(self,difficulty:str):self._swap(GameFrame,self.current_user,difficulty,self._show_menu)

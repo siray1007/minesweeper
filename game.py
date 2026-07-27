@@ -101,7 +101,7 @@ class MinesweeperGame:
 
 class GameFrame(tk.Frame):
     def __init__(self,parent,user:dict,difficulty:str,on_back):
-        super().__init__(parent,bg='#e0e0e0')
+        super().__init__(parent,bg='#eceff1')
         self.user=user;self.difficulty=difficulty;self.on_back=on_back
         self.cfg=DIFFICULTY_CONFIG[difficulty];self.game=MinesweeperGame(difficulty)
         self.cell_size=self.cfg['cell'];self.timer_running=False;self.timer_seconds=0;self._after_id=None;self.zoom=1.0
@@ -133,18 +133,18 @@ class GameFrame(tk.Frame):
             self.canvas.configure(width=self.cfg['cols']*self.cell_size,height=self.cfg['rows']*self.cell_size)
             self._redraw()
     def _build_ui(self):
-        bar=tk.Frame(self,bg='#d0d0d0',height=48);bar.pack(fill=tk.X,padx=3,pady=(3,0));bar.pack_propagate(False)
+        bar=tk.Frame(self,bg='#cfd8dc',height=48);bar.pack(fill=tk.X,padx=3,pady=(3,0));bar.pack_propagate(False)
         ttk.Button(bar,text=t('btn_back'),command=self._back).pack(side=tk.LEFT,padx=6,pady=4)
         if os.path.exists(_BOMB_PNG):
             self._bomb_counter_img=tk.PhotoImage(file=_BOMB_PNG)
-            tk.Label(bar,image=self._bomb_counter_img,bg='#d0d0d0').pack(side=tk.LEFT,padx=(10,2))
-        self.mine_label=tk.Label(bar,font=('Consolas',15,'bold'),bg='#d0d0d0',fg='#333');self.mine_label.pack(side=tk.LEFT)
-        tk.Label(bar,text=self.cfg['title'],font=('微软雅黑',12),bg='#d0d0d0',fg='#555').pack(side=tk.LEFT,expand=True)
-        self.timer_label=tk.Label(bar,text="⏱ 00:00",font=('Consolas',15,'bold'),bg='#d0d0d0',fg='#333');self.timer_label.pack(side=tk.RIGHT,padx=15)
+            tk.Label(bar,image=self._bomb_counter_img,bg='#cfd8dc').pack(side=tk.LEFT,padx=(10,2))
+        self.mine_label=tk.Label(bar,font=('Consolas',15,'bold'),bg='#cfd8dc',fg='#333');self.mine_label.pack(side=tk.LEFT)
+        tk.Label(bar,text=self.cfg['title'],font=('微软雅黑',12),bg='#cfd8dc',fg='#555').pack(side=tk.LEFT,expand=True)
+        self.timer_label=tk.Label(bar,text="⏱ 00:00",font=('Consolas',15,'bold'),bg='#cfd8dc',fg='#333');self.timer_label.pack(side=tk.RIGHT,padx=15)
         self._update_mine_label()
         if self.difficulty=='81x81':self._build_large_board()
         else:self._build_small_board()
-        bottom=tk.Frame(self,bg='#e0e0e0');bottom.pack(fill=tk.X,padx=10,pady=8)
+        bottom=tk.Frame(self,bg='#eceff1');bottom.pack(fill=tk.X,padx=10,pady=8)
         ttk.Button(bottom,text=t('btn_restart'),command=self.restart).pack(side=tk.LEFT,padx=5)
     def _build_small_board(self):
         w=self.cfg['cols']*self.cell_size;h=self.cfg['rows']*self.cell_size
@@ -172,7 +172,7 @@ class GameFrame(tk.Frame):
                     self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='#999')
                     self.canvas.create_rectangle(x1+1,y1+1,x2-1,y2-1,fill=clr,outline='')
     def _build_large_board(self):
-        outer=tk.Frame(self,bg='#e0e0e0');outer.pack(fill=tk.BOTH,expand=True,padx=8,pady=8)
+        outer=tk.Frame(self,bg='#eceff1');outer.pack(fill=tk.BOTH,expand=True,padx=8,pady=8)
         outer.grid_rowconfigure(0,weight=1);outer.grid_columnconfigure(0,weight=1)
         cw=min(self.cfg['cols']*self.cell_size,780);ch=min(self.cfg['rows']*self.cell_size,560)
         self.scroll_canvas=tk.Canvas(outer,width=cw,height=ch,bg='#bdbdbd',highlightthickness=0)
@@ -187,9 +187,9 @@ class GameFrame(tk.Frame):
         self.scroll_canvas.configure(scrollregion=(0,0,fw,fh))
         self.canvas.bind('<Button-1>',self._left_click);self.canvas.bind('<Double-Button-1>',self._double_click)
         self.canvas.bind('<Button-3>',self._right_click);self.canvas.bind('<Button-2>',self._right_click)
-        zf=tk.Frame(self,bg='#e0e0e0');zf.pack(fill=tk.X,padx=8,pady=(0,5))
+        zf=tk.Frame(self,bg='#eceff1');zf.pack(fill=tk.X,padx=8,pady=(0,5))
         ttk.Button(zf,text="🔍−",command=self._zoom_out,width=4).pack(side=tk.LEFT,padx=2)
-        self.zoom_label=tk.Label(zf,text="100%",font=('微软雅黑',9),bg='#e0e0e0',width=5);self.zoom_label.pack(side=tk.LEFT,padx=4)
+        self.zoom_label=tk.Label(zf,text="100%",font=('微软雅黑',9),bg='#eceff1',width=5);self.zoom_label.pack(side=tk.LEFT,padx=4)
         ttk.Button(zf,text="🔍+",command=self._zoom_in,width=4).pack(side=tk.LEFT,padx=2)
         ttk.Button(zf,text="适应窗口",command=self._zoom_reset,width=9).pack(side=tk.LEFT,padx=10)
         self.canvas.bind('<MouseWheel>',self._on_mousewheel);self._draw_large()
