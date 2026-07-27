@@ -1,13 +1,11 @@
-"""
-扫雷游戏 - 排行榜模块（嵌入主窗口）
-"""
+"""扫雷游戏 - 排行榜模块（嵌入主窗口）"""
 import tkinter as tk
 from tkinter import ttk
 import os
 from database import get_rankings_local, _gitee_fetch_rankings
 from lang import t
 
-_BG = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bg_pattern.png')
+_BG = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bg_crosshatch.png')
 
 DIFFICULTY_LABELS = [('9x9',t('diff_easy')),('27x27',t('diff_medium')),('81x81',t('diff_hard'))]
 

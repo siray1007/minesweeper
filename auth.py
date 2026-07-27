@@ -6,7 +6,7 @@ from database import register_user, login_user
 from lang import t, save_lang, LANG_OPTIONS, get_lang
 
 _ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bomb32.png')
-_BG = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bg_pattern.png')
+_BG = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bg_crosshatch.png')
 
 def _bomb_label(parent, text, font, **kw):
     f = tk.Frame(parent, bg=kw.get('bg', '#f0f0f0'))
