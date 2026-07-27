@@ -1,6 +1,6 @@
 """扫雷游戏 - 登录 / 注册模块"""
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import messagebox
 import os
 from database import register_user, login_user
 from lang import t, save_lang, LANG_OPTIONS, get_lang
@@ -15,22 +15,15 @@ class AuthFrame(tk.Frame):
         for w in self.winfo_children(): w.destroy()
     def _lang_selector(self):
         f = tk.Frame(self, bg='#0f0f23'); f.place(x=16, y=16)
-        style = ttk.Style(); style.theme_use('clam')
-        style.configure('Lang.TCombobox', fieldbackground='#1a1a2e', background='#16213e', foreground='#e94560', arrowcolor='#a0a0b0', borderwidth=0)
-        style.map('Lang.TCombobox', fieldbackground=[('readonly', '#1a1a2e')], foreground=[('readonly', '#e94560')], selectbackground=[('readonly', '#e94560')], selectforeground=[('readonly', 'white')])
-        root = self.winfo_toplevel()
-        root.option_add('*TCombobox*Listbox.background', '#1a1a2e')
-        root.option_add('*TCombobox*Listbox.foreground', '#e0e0e0')
-        root.option_add('*TCombobox*Listbox.selectBackground', '#e94560')
-        root.option_add('*TCombobox*Listbox.selectForeground', 'white')
         names = [o[1] for o in LANG_OPTIONS]
         cur = dict(LANG_OPTIONS).get(get_lang(), names[0])
-        cb = ttk.Combobox(f, textvariable=tk.StringVar(value=cur), values=names, state='readonly', width=12, font=('微软雅黑', 9), style='Lang.TCombobox')
-        cb.pack()
-        def on_change(e=None):
-            for code, name in LANG_OPTIONS:
-                if name == cb.get(): save_lang(code); self._refresh(); break
-        cb.bind('<<ComboboxSelected>>', on_change)
+        var = tk.StringVar(value=cur)
+        mb = tk.Menubutton(f, textvariable=var, font=('微软雅黑', 9), bg='#1a1a2e', fg='#e94560', activebackground='#16213e', activeforeground='#e94560', relief='flat', bd=4, padx=8, pady=2, cursor='hand2', indicatoron=True)
+        mb.pack()
+        menu = tk.Menu(mb, tearoff=0, bg='#1a1a2e', fg='#e0e0e0', activebackground='#e94560', activeforeground='white', font=('微软雅黑', 9))
+        for code, name in LANG_OPTIONS:
+            menu.add_command(label=name, command=lambda c=code, n=name, v=var: (save_lang(c), v.set(n), self._refresh()))
+        mb.configure(menu=menu)
     def _refresh(self):
         if hasattr(self, '_user'): self._show_login()
         else: self._show_register()
