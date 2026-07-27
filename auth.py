@@ -25,7 +25,7 @@ class AuthFrame(tk.Frame):
         root.option_add('*TCombobox*Listbox.selectForeground', 'white')
         names = [o[1] for o in LANG_OPTIONS]
         cur = dict(LANG_OPTIONS).get(get_lang(), names[0])
-        cb = ttk.Combobox(f, textvariable=tk.StringVar(value=cur), values=names, state='readonly', width=12, font=('Segoe UI', 9), style='Lang.TCombobox')
+        cb = ttk.Combobox(f, textvariable=tk.StringVar(value=cur), values=names, state='readonly', width=12, font=('微软雅黑', 9), style='Lang.TCombobox')
         cb.pack()
         def on_change(e=None):
             for code, name in LANG_OPTIONS:
