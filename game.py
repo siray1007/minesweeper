@@ -1,4 +1,4 @@
-"""扫雷游戏 - 核心模块（嵌入主窗口）"""
+"""扫雷游戏 - 核心模块（暗色主题）"""
 import tkinter as tk
 from tkinter import ttk, messagebox
 import random,threading,os,colorsys
@@ -6,11 +6,11 @@ from database import save_ranking, _gitee_append_ranking
 from lang import t
 
 _BOMB_PNG=os.path.join(os.path.dirname(os.path.abspath(__file__)),'bomb16.png')
-NUM_COLORS={1:'#0000FF',2:'#008000',3:'#FF0000',4:'#000080',5:'#800000',6:'#008080',7:'#000000',8:'#808080'}
+NUM_COLORS={1:'#64b5f6',2:'#81c784',3:'#e57373',4:'#ba68c8',5:'#ffb74d',6:'#4dd0e1',7:'#e0e0e0',8:'#90a4ae'}
 DIFFICULTY_CONFIG={'9x9':{'rows':9,'cols':9,'mines':10,'cell':48,'title':t('easy_title')},'27x27':{'rows':27,'cols':27,'mines':100,'cell':20,'title':t('medium_title')},'81x81':{'rows':81,'cols':81,'mines':800,'cell':14,'title':t('hard_title')}}
 
 def _random_pastel():
-    h=random.random();s=random.uniform(0.25,0.45);v=random.uniform(0.75,0.90)
+    h=random.random();s=random.uniform(0.3,0.5);v=random.uniform(0.3,0.5)
     r,g,b=colorsys.hsv_to_rgb(h,s,v)
     return (int(r*255),int(g*255),int(b*255))
 def _cell_color(c1,c2,t):
@@ -101,7 +101,7 @@ class MinesweeperGame:
 
 class GameFrame(tk.Frame):
     def __init__(self,parent,user:dict,difficulty:str,on_back):
-        super().__init__(parent,bg='#eceff1')
+        super().__init__(parent,bg='#1a1a2e')
         self.user=user;self.difficulty=difficulty;self.on_back=on_back
         self.cfg=DIFFICULTY_CONFIG[difficulty];self.game=MinesweeperGame(difficulty)
         self.cell_size=self.cfg['cell'];self.timer_running=False;self.timer_seconds=0;self._after_id=None;self.zoom=1.0
@@ -133,22 +133,22 @@ class GameFrame(tk.Frame):
             self.canvas.configure(width=self.cfg['cols']*self.cell_size,height=self.cfg['rows']*self.cell_size)
             self._redraw()
     def _build_ui(self):
-        bar=tk.Frame(self,bg='#cfd8dc',height=48);bar.pack(fill=tk.X,padx=3,pady=(3,0));bar.pack_propagate(False)
+        bar=tk.Frame(self,bg='#16213e',height=48);bar.pack(fill=tk.X,padx=3,pady=(3,0));bar.pack_propagate(False)
         ttk.Button(bar,text=t('btn_back'),command=self._back).pack(side=tk.LEFT,padx=6,pady=4)
         if os.path.exists(_BOMB_PNG):
             self._bomb_counter_img=tk.PhotoImage(file=_BOMB_PNG)
-            tk.Label(bar,image=self._bomb_counter_img,bg='#cfd8dc').pack(side=tk.LEFT,padx=(10,2))
-        self.mine_label=tk.Label(bar,font=('Consolas',15,'bold'),bg='#cfd8dc',fg='#333');self.mine_label.pack(side=tk.LEFT)
-        tk.Label(bar,text=self.cfg['title'],font=('微软雅黑',12),bg='#cfd8dc',fg='#555').pack(side=tk.LEFT,expand=True)
-        self.timer_label=tk.Label(bar,text="⏱ 00:00",font=('Consolas',15,'bold'),bg='#cfd8dc',fg='#333');self.timer_label.pack(side=tk.RIGHT,padx=15)
+            tk.Label(bar,image=self._bomb_counter_img,bg='#16213e').pack(side=tk.LEFT,padx=(10,2))
+        self.mine_label=tk.Label(bar,font=('Consolas',15,'bold'),bg='#16213e',fg='#e0e0e0');self.mine_label.pack(side=tk.LEFT)
+        tk.Label(bar,text=self.cfg['title'],font=('微软雅黑',12),bg='#16213e',fg='#a0a0b0').pack(side=tk.LEFT,expand=True)
+        self.timer_label=tk.Label(bar,text="⏱ 00:00",font=('Consolas',15,'bold'),bg='#16213e',fg='#e0e0e0');self.timer_label.pack(side=tk.RIGHT,padx=15)
         self._update_mine_label()
         if self.difficulty=='81x81':self._build_large_board()
         else:self._build_small_board()
-        bottom=tk.Frame(self,bg='#eceff1');bottom.pack(fill=tk.X,padx=10,pady=8)
+        bottom=tk.Frame(self,bg='#1a1a2e');bottom.pack(fill=tk.X,padx=10,pady=8)
         ttk.Button(bottom,text=t('btn_restart'),command=self.restart).pack(side=tk.LEFT,padx=5)
     def _build_small_board(self):
         w=self.cfg['cols']*self.cell_size;h=self.cfg['rows']*self.cell_size
-        self.canvas=tk.Canvas(self,width=w,height=h,bg='#bdbdbd',highlightthickness=0,cursor='crosshair')
+        self.canvas=tk.Canvas(self,width=w,height=h,bg='#0a0a1a',highlightthickness=0,cursor='crosshair')
         self.canvas.pack(padx=8,pady=8,expand=True)
         self.canvas.bind('<Button-1>',self._left_click);self.canvas.bind('<Double-Button-1>',self._double_click)
         self.canvas.bind('<Button-3>',self._right_click);self.canvas.bind('<Button-2>',self._right_click)
@@ -159,37 +159,37 @@ class GameFrame(tk.Frame):
             for c in range(g.cols):
                 x1,y1=c*cs,r*cs;x2,y2=x1+cs,y1+cs;cx,cy=x1+cs//2,y1+cs//2
                 if g.revealed[r][c]:
-                    self.canvas.create_rectangle(x1,y1,x2,y2,fill='#ffffff',outline='#ccc')
+                    self.canvas.create_rectangle(x1,y1,x2,y2,fill='#16213e',outline='#2a2a3e')
                     val=g.board[r][c]
                     if val==-1:self.canvas.create_text(cx,cy,text='💣',font=('Arial',cs//2))
-                    elif val>0:self.canvas.create_text(cx,cy,text=str(val),font=('Arial',cs//2,'bold'),fill=NUM_COLORS.get(val,'#000'))
+                    elif val>0:self.canvas.create_text(cx,cy,text=str(val),font=('Arial',cs//2,'bold'),fill=NUM_COLORS.get(val,'#e0e0e0'))
                 elif g.flagged[r][c]:
-                    clr=self._grad(r,c);self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='#999')
+                    clr=self._grad(r,c);self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='#2a2a3e')
                     self.canvas.create_text(cx,cy,text='🚩',font=('Arial',cs//2))
                 else:
                     clr=self._grad(r,c)
                     if(r+c)%2==1:clr=_lighten(clr,0.06)
-                    self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='#999')
+                    self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='#1a1a2e')
                     self.canvas.create_rectangle(x1+1,y1+1,x2-1,y2-1,fill=clr,outline='')
     def _build_large_board(self):
-        outer=tk.Frame(self,bg='#eceff1');outer.pack(fill=tk.BOTH,expand=True,padx=8,pady=8)
+        outer=tk.Frame(self,bg='#1a1a2e');outer.pack(fill=tk.BOTH,expand=True,padx=8,pady=8)
         outer.grid_rowconfigure(0,weight=1);outer.grid_columnconfigure(0,weight=1)
         cw=min(self.cfg['cols']*self.cell_size,780);ch=min(self.cfg['rows']*self.cell_size,560)
-        self.scroll_canvas=tk.Canvas(outer,width=cw,height=ch,bg='#bdbdbd',highlightthickness=0)
+        self.scroll_canvas=tk.Canvas(outer,width=cw,height=ch,bg='#0a0a1a',highlightthickness=0)
         self.h_bar=ttk.Scrollbar(outer,orient=tk.HORIZONTAL,command=self.scroll_canvas.xview)
         self.v_bar=ttk.Scrollbar(outer,orient=tk.VERTICAL,command=self.scroll_canvas.yview)
         self.scroll_canvas.configure(xscrollcommand=self.h_bar.set,yscrollcommand=self.v_bar.set)
         self.scroll_canvas.grid(row=0,column=0,sticky='nsew')
         self.h_bar.grid(row=1,column=0,sticky='ew');self.v_bar.grid(row=0,column=1,sticky='ns')
         fw=self.cfg['cols']*self.cell_size;fh=self.cfg['rows']*self.cell_size
-        self.canvas=tk.Canvas(self.scroll_canvas,width=fw,height=fh,bg='#bdbdbd',highlightthickness=0)
+        self.canvas=tk.Canvas(self.scroll_canvas,width=fw,height=fh,bg='#0a0a1a',highlightthickness=0)
         self.scroll_canvas.create_window(0,0,window=self.canvas,anchor='nw')
         self.scroll_canvas.configure(scrollregion=(0,0,fw,fh))
         self.canvas.bind('<Button-1>',self._left_click);self.canvas.bind('<Double-Button-1>',self._double_click)
         self.canvas.bind('<Button-3>',self._right_click);self.canvas.bind('<Button-2>',self._right_click)
-        zf=tk.Frame(self,bg='#eceff1');zf.pack(fill=tk.X,padx=8,pady=(0,5))
+        zf=tk.Frame(self,bg='#1a1a2e');zf.pack(fill=tk.X,padx=8,pady=(0,5))
         ttk.Button(zf,text="🔍−",command=self._zoom_out,width=4).pack(side=tk.LEFT,padx=2)
-        self.zoom_label=tk.Label(zf,text="100%",font=('微软雅黑',9),bg='#eceff1',width=5);self.zoom_label.pack(side=tk.LEFT,padx=4)
+        self.zoom_label=tk.Label(zf,text="100%",font=('微软雅黑',9),bg='#1a1a2e',fg='#a0a0b0',width=5);self.zoom_label.pack(side=tk.LEFT,padx=4)
         ttk.Button(zf,text="🔍+",command=self._zoom_in,width=4).pack(side=tk.LEFT,padx=2)
         ttk.Button(zf,text="适应窗口",command=self._zoom_reset,width=9).pack(side=tk.LEFT,padx=10)
         self.canvas.bind('<MouseWheel>',self._on_mousewheel);self._draw_large()
@@ -199,14 +199,14 @@ class GameFrame(tk.Frame):
             for c in range(g.cols):
                 x1,y1=c*cs+1,r*cs+1;x2,y2=x1+cs-2,y1+cs-2;cx,cy=x1+(cs-2)//2,y1+(cs-2)//2
                 if g.revealed[r][c]:
-                    self.canvas.create_rectangle(x1,y1,x2,y2,fill='#ffffff',outline='')
+                    self.canvas.create_rectangle(x1,y1,x2,y2,fill='#16213e',outline='')
                     val=g.board[r][c]
                     if val==-1:
                         if cs>=10:self.canvas.create_text(cx,cy,text='💣',font=('Arial',max(8,cs//2)))
                     elif val>0:
-                        if cs>=10:self.canvas.create_text(cx,cy,text=str(val),font=('Arial',max(8,cs//2),'bold'),fill=NUM_COLORS.get(val,'#000'))
+                        if cs>=10:self.canvas.create_text(cx,cy,text=str(val),font=('Arial',max(8,cs//2),'bold'),fill=NUM_COLORS.get(val,'#e0e0e0'))
                         else:
-                            clr={1:'#bbdefb',2:'#c8e6c9',3:'#ffcdd2',4:'#b39ddb',5:'#ffccbc',6:'#b2dfdb',7:'#cfd8dc',8:'#d7ccc8'}.get(val,'#d8d8d8')
+                            clr={1:'#1a237e',2:'#1b5e20',3:'#b71c1c',4:'#4a148c',5:'#e65100',6:'#004d40',7:'#263238',8:'#37474f'}.get(val,'#16213e')
                             self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='')
                 elif g.flagged[r][c]:
                     clr=self._grad(r,c);self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='')
