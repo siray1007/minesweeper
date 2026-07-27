@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 _ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '扫雷图标.png')
 _BOMB_ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bomb32.png')
-_BG_PATTERN = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bg_pattern.png')
+_BG_PATTERN = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bg_crosshatch.png')
 
 from database import init_db
 from auth import AuthFrame
