@@ -1,4 +1,4 @@
-"""扫雷游戏 - 登录 / 注册模块"""
+"""扫雷 - 登录 / 注册模块"""
 import tkinter as tk
 from tkinter import messagebox
 import os
@@ -6,6 +6,10 @@ from database import register_user, login_user
 from lang import t, save_lang, LANG_OPTIONS, get_lang
 
 _ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bomb32.png')
+
+def _hover_btn(btn, normal, hover):
+    btn.bind('<Enter>', lambda e: btn.configure(bg=hover))
+    btn.bind('<Leave>', lambda e: btn.configure(bg=normal))
 
 class AuthFrame(tk.Frame):
     def __init__(self, parent, on_login):
@@ -46,7 +50,8 @@ class AuthFrame(tk.Frame):
         tk.Label(ff, text=t('password'), bg='#16213e', fg='#808090', font=('微软雅黑', 10), anchor='w').pack(fill=tk.X, padx=40)
         self._pwd = tk.Entry(ff, width=30, font=('微软雅黑', 12), show='●', bg='#0a0a1a', fg='#e0e0e0', insertbackground='#e94560', relief='flat', bd=10)
         self._pwd.pack(pady=(4, 20), padx=40)
-        tk.Button(ff, text=t('btn_login'), font=('微软雅黑', 12, 'bold'), bg='#e94560', fg='white', activebackground='#c73550', relief='flat', bd=0, padx=50, pady=10, cursor='hand2', command=self._do_login).pack(pady=(10, 8))
+        b = tk.Button(ff, text=t('btn_login'), font=('微软雅黑', 12, 'bold'), bg='#e94560', fg='white', activebackground='#c73550', relief='flat', bd=0, padx=50, pady=10, cursor='hand2', command=self._do_login)
+        _hover_btn(b, '#e94560', '#ff5a75'); b.pack(pady=(10, 8))
         link = tk.Frame(f, bg='#16213e'); link.pack()
         tk.Label(link, text=t('no_account'), bg='#16213e', fg='#707080', font=('微软雅黑', 9)).pack(side=tk.LEFT)
         tk.Button(link, text=t('to_register'), font=('微软雅黑', 9, 'bold'), bg='#16213e', fg='#e94560', activebackground='#16213e', relief='flat', bd=0, cursor='hand2', command=self._show_register).pack(side=tk.LEFT)
@@ -65,7 +70,8 @@ class AuthFrame(tk.Frame):
             e = tk.Entry(ff, width=30, font=('微软雅黑', 12), bg='#0a0a1a', fg='#e0e0e0', insertbackground='#e94560', relief='flat', bd=10, show='●' if show else '')
             e.pack(pady=(4, 8), padx=40); setattr(self, attr, e)
         self._reg_user.focus_set()
-        tk.Button(ff, text=t('btn_register'), font=('微软雅黑', 12, 'bold'), bg='#e94560', fg='white', activebackground='#c73550', relief='flat', bd=0, padx=50, pady=10, cursor='hand2', command=self._do_register).pack(pady=(12, 5))
+        b = tk.Button(ff, text=t('btn_register'), font=('微软雅黑', 12, 'bold'), bg='#e94560', fg='white', activebackground='#c73550', relief='flat', bd=0, padx=50, pady=10, cursor='hand2', command=self._do_register)
+        _hover_btn(b, '#e94560', '#ff5a75'); b.pack(pady=(12, 5))
         link = tk.Frame(f, bg='#16213e'); link.pack()
         tk.Label(link, text=t('has_account'), bg='#16213e', fg='#707080', font=('微软雅黑', 9)).pack(side=tk.LEFT)
         tk.Button(link, text=t('to_login'), font=('微软雅黑', 9, 'bold'), bg='#16213e', fg='#e94560', activebackground='#16213e', relief='flat', bd=0, cursor='hand2', command=self._show_login).pack(side=tk.LEFT)
