@@ -1,10 +1,14 @@
-"""掃雷遊戲 - 排行榜模塊（暗色主題）"""
+"""扫雷 - 排行榜模块"""
 import tkinter as tk
 from tkinter import ttk
 from database import get_rankings_local, _gitee_fetch_rankings
 from lang import t
 
 DIFFICULTY_LABELS=[('9x9',t('diff_easy')),('27x27',t('diff_medium')),('81x81',t('diff_hard'))]
+
+def _hover_btn(btn, normal, hover):
+    btn.bind('<Enter>', lambda e: btn.configure(bg=hover))
+    btn.bind('<Leave>', lambda e: btn.configure(bg=normal))
 
 def _dark_theme():
     style=ttk.Style();style.theme_use('clam')
@@ -16,8 +20,6 @@ def _dark_theme():
     style.configure('TNotebook.Tab',background='#16213e',foreground='#a0a0b0',padding=(16,6),borderwidth=0)
     style.map('TNotebook.Tab',background=[('selected','#1a1a2e')],foreground=[('selected','#e94560')])
     style.configure('Vertical.TScrollbar',background='#16213e',troughcolor='#0f0f23',borderwidth=0,arrowcolor='#a0a0b0')
-    style.configure('TButton',background='#16213e',foreground='#a0a0b0',borderwidth=0,padding=6)
-    style.map('TButton',background=[('active','#0f3460')])
 
 class RankingFrame(tk.Frame):
     def __init__(self,parent,current_user:dict,on_back):
@@ -28,7 +30,8 @@ class RankingFrame(tk.Frame):
         self._build_ui();self.after(100,self._fetch_cloud_step)
     def _build_ui(self):
         bar=tk.Frame(self,bg='#16213e',height=44);bar.pack(fill=tk.X);bar.pack_propagate(False)
-        ttk.Button(bar,text=t('btn_back'),command=self.on_back).pack(side=tk.LEFT,padx=10,pady=6)
+        b=tk.Button(bar,text=t('btn_back'),font=('微软雅黑',9),bg='#16213e',fg='#a0a0b0',activebackground='#253350',activeforeground='#e0e0e0',relief='flat',bd=0,padx=12,pady=8,cursor='hand2',command=self.on_back)
+        _hover_btn(b,'#16213e','#253350');b.pack(side=tk.LEFT,padx=6,pady=6)
         tk.Label(bar,text=t('rank_title'),font=('微软雅黑',18,'bold'),bg='#16213e',fg='#e94560').pack(side=tk.LEFT,padx=5)
         tk.Label(bar,text=t('current_user',self.current_user['username']),font=('微软雅黑',9),bg='#16213e',fg='#707080').pack(side=tk.RIGHT,padx=15,pady=6)
         nb=ttk.Notebook(self);nb.pack(fill=tk.BOTH,expand=True,padx=10,pady=5)
