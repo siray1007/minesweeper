@@ -30,8 +30,8 @@ class RankingFrame(tk.Frame):
         self._build_ui();self.after(100,self._fetch_cloud_step)
     def _build_ui(self):
         bar=tk.Frame(self,bg='#16213e',height=44);bar.pack(fill=tk.X);bar.pack_propagate(False)
-        b=tk.Button(bar,text=t('btn_back'),font=('微软雅黑',9),bg='#16213e',fg='#a0a0b0',activebackground='#253350',activeforeground='#e0e0e0',relief='flat',bd=0,padx=12,pady=8,cursor='hand2',command=self.on_back)
-        _hover_btn(b,'#16213e','#253350');b.pack(side=tk.LEFT,padx=6,pady=6)
+        b=tk.Button(bar,text=t('btn_back'),font=('微软雅黑',9),bg='#16213e',fg='#a0a0b0',activebackground='#e94560',activeforeground='white',relief='flat',bd=0,padx=12,pady=8,cursor='hand2',command=self.on_back)
+        _hover_btn(b,'#16213e','#e94560');b.pack(side=tk.LEFT,padx=6,pady=6)
         tk.Label(bar,text=t('rank_title'),font=('微软雅黑',18,'bold'),bg='#16213e',fg='#e94560').pack(side=tk.LEFT,padx=5)
         tk.Label(bar,text=t('current_user',self.current_user['username']),font=('微软雅黑',9),bg='#16213e',fg='#707080').pack(side=tk.RIGHT,padx=15,pady=6)
         nb=ttk.Notebook(self);nb.pack(fill=tk.BOTH,expand=True,padx=10,pady=5)
