@@ -19,14 +19,16 @@ class AuthFrame(tk.Frame):
         for w in self.winfo_children(): w.destroy()
     def _lang_selector(self):
         f = tk.Frame(self, bg='#0f0f23'); f.place(x=16, y=16)
+        lbl = tk.Label(f, text='🌐', font=('微软雅黑', 11), bg='#0f0f23', fg='#a0a0b0')
+        lbl.pack(side=tk.LEFT, padx=(0,4))
         names = [o[1] for o in LANG_OPTIONS]
         cur = dict(LANG_OPTIONS).get(get_lang(), names[0])
         var = tk.StringVar(value=cur)
-        mb = tk.Menubutton(f, textvariable=var, font=('微软雅黑', 9), bg='#1a1a2e', fg='#e94560', activebackground='#e94560', activeforeground='white', relief='flat', bd=4, padx=8, pady=2, cursor='hand2', indicatoron=True)
-        mb.bind('<Enter>', lambda e: mb.configure(bg='#253350'))
-        mb.bind('<Leave>', lambda e: mb.configure(bg='#1a1a2e'))
-        mb.pack()
-        menu = tk.Menu(mb, tearoff=0, bg='#1a1a2e', fg='#e0e0e0', activebackground='#e94560', activeforeground='white', font=('微软雅黑', 9))
+        mb = tk.Menubutton(f, textvariable=var, font=('微软雅黑', 10, 'bold'), bg='#16213e', fg='#e94560', activebackground='#e94560', activeforeground='white', relief='solid', bd=1, padx=10, pady=4, cursor='hand2', indicatoron=True)
+        mb.bind('<Enter>', lambda e: mb.configure(bg='#e94560', fg='white'))
+        mb.bind('<Leave>', lambda e: mb.configure(bg='#16213e', fg='#e94560'))
+        mb.pack(side=tk.LEFT)
+        menu = tk.Menu(mb, tearoff=0, bg='#1a1a2e', fg='#e0e0e0', activebackground='#e94560', activeforeground='white', font=('微软雅黑', 10))
         for code, name in LANG_OPTIONS:
             menu.add_command(label=name, command=lambda c=code, n=name, v=var: (save_lang(c), v.set(n), self._refresh()))
         mb.configure(menu=menu)
