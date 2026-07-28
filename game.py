@@ -1,4 +1,4 @@
-"""扫雷游戏 - 核心模块（暗色主题）"""
+"""扫雷 - 核心模块"""
 import tkinter as tk
 from tkinter import ttk, messagebox
 import random,threading,os,colorsys
@@ -162,14 +162,14 @@ class GameFrame(tk.Frame):
                     self.canvas.create_rectangle(x1,y1,x2,y2,fill='#16213e',outline='#2a2a3e')
                     val=g.board[r][c]
                     if val==-1:self.canvas.create_text(cx,cy,text='💣',font=('Arial',cs//2))
-                    elif val>0:self.canvas.create_text(cx,cy,text=str(val),font=('Arial',cs//2,'bold'),fill=NUM_COLORS.get(val,'#e0e0e0'))
+                    elif val>0:self.canvas.create_text(cx,cy,text=str(val),font=('Arial',cs//2,'bold'),fill=NUM_COLORS.get(val,'#b0b0b0'))
                 elif g.flagged[r][c]:
                     clr=self._grad(r,c);self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='#2a2a3e')
                     self.canvas.create_text(cx,cy,text='🚩',font=('Arial',cs//2))
                 else:
                     clr=self._grad(r,c)
                     if(r+c)%2==1:clr=_lighten(clr,0.06)
-                    self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='#0f0f23')
+                    self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='#1a1a2e')
                     self.canvas.create_rectangle(x1+1,y1+1,x2-1,y2-1,fill=clr,outline='')
     def _build_large_board(self):
         outer=tk.Frame(self,bg='#0f0f23');outer.pack(fill=tk.BOTH,expand=True,padx=8,pady=8)
@@ -204,7 +204,7 @@ class GameFrame(tk.Frame):
                     if val==-1:
                         if cs>=10:self.canvas.create_text(cx,cy,text='💣',font=('Arial',max(8,cs//2)))
                     elif val>0:
-                        if cs>=10:self.canvas.create_text(cx,cy,text=str(val),font=('Arial',max(8,cs//2),'bold'),fill=NUM_COLORS.get(val,'#e0e0e0'))
+                        if cs>=10:self.canvas.create_text(cx,cy,text=str(val),font=('Arial',max(8,cs//2),'bold'),fill=NUM_COLORS.get(val,'#b0b0b0'))
                         else:
                             clr={1:'#1a237e',2:'#1b5e20',3:'#b71c1c',4:'#4a148c',5:'#e65100',6:'#004d40',7:'#263238',8:'#37474f'}.get(val,'#16213e')
                             self.canvas.create_rectangle(x1,y1,x2,y2,fill=clr,outline='')
