@@ -15,6 +15,10 @@ from game import GameFrame, DIFFICULTY_CONFIG
 from ranking import RankingFrame
 from lang import t
 
+def _hover_btn(btn, normal, hover):
+    btn.bind('<Enter>', lambda e: btn.configure(bg=hover))
+    btn.bind('<Leave>', lambda e: btn.configure(bg=normal))
+
 class MainApp:
     def __init__(self):
         self.root=tk.Tk()
@@ -61,10 +65,12 @@ class MainApp:
             inner=tk.Frame(card,bg='#1a1a2e');inner.pack(padx=22,pady=18)
             tk.Label(inner,text=label,font=('微软雅黑',16,'bold'),bg='#1a1a2e',fg=color).pack()
             tk.Label(inner,text=desc,font=('微软雅黑',10),bg='#1a1a2e',fg='#707080').pack(pady=(4,12))
-            tk.Button(inner,text=t('btn_start'),font=('微软雅黑',11,'bold'),bg=color,fg='#0f0f23',activebackground=light,relief='flat',bd=0,padx=22,pady=8,cursor='hand2',command=lambda d=diff_key:self._start_game(d)).pack()
+            btn=tk.Button(inner,text=t('btn_start'),font=('微软雅黑',11,'bold'),bg=color,fg='#0f0f23',activebackground=light,relief='flat',bd=0,padx=22,pady=8,cursor='hand2',command=lambda d=diff_key:self._start_game(d))
+            _hover_btn(btn,color,light);btn.pack()
         bottom=tk.Frame(f,bg='#0f0f23');bottom.pack(pady=30)
         for text,cmd in [(t('btn_ranking'),self._show_ranking),(t('btn_logout'),self._logout)]:
-            tk.Button(bottom,text=text,font=('微软雅黑',11),bg='#1a1a2e',fg='#a0a0b0',activebackground='#16213e',relief='flat',bd=0,padx=28,pady=10,cursor='hand2',command=cmd).pack(side=tk.LEFT,padx=10)
+            b=tk.Button(bottom,text=text,font=('微软雅黑',11),bg='#1a1a2e',fg='#a0a0b0',activebackground='#16213e',relief='flat',bd=0,padx=28,pady=10,cursor='hand2',command=cmd)
+            _hover_btn(b,'#1a1a2e','#253350');b.pack(side=tk.LEFT,padx=10)
     def _start_game(self,difficulty:str):self._swap(GameFrame,self.current_user,difficulty,self._show_menu)
     def _show_ranking(self):self._swap(RankingFrame,self.current_user,self._show_menu)
     def _logout(self):
