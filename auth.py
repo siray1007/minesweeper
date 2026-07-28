@@ -22,7 +22,7 @@ class AuthFrame(tk.Frame):
         names = [o[1] for o in LANG_OPTIONS]
         cur = dict(LANG_OPTIONS).get(get_lang(), names[0])
         var = tk.StringVar(value=cur)
-        mb = tk.Menubutton(f, textvariable=var, font=('微软雅黑', 9), bg='#1a1a2e', fg='#e94560', activebackground='#16213e', activeforeground='#e94560', relief='flat', bd=4, padx=8, pady=2, cursor='hand2', indicatoron=True)
+        mb = tk.Menubutton(f, textvariable=var, font=('微软雅黑', 9), bg='#1a1a2e', fg='#e94560', activebackground='#253350', activeforeground='#ff5a75', relief='flat', bd=4, padx=8, pady=2, cursor='hand2', indicatoron=True)
         mb.pack()
         menu = tk.Menu(mb, tearoff=0, bg='#1a1a2e', fg='#e0e0e0', activebackground='#e94560', activeforeground='white', font=('微软雅黑', 9))
         for code, name in LANG_OPTIONS:
