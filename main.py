@@ -1,82 +1,162 @@
-"""
-扫雷 - 主入口
-"""
+"""Application shell and top-level navigation."""
+from __future__ import annotations
+
+import os
 import tkinter as tk
-from tkinter import ttk, messagebox
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from tkinter import messagebox, ttk
 
-_ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '扫雷图标.png')
-_BOMB_ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bomb32.png')
-
-from database import init_db
 from auth import AuthFrame
-from game import GameFrame, DIFFICULTY_CONFIG
-from ranking import RankingFrame
+from database import init_db
+from game import DIFFICULTY_CONFIG, GameFrame
 from lang import t
+from ranking import RankingFrame
+from ui_theme import COLORS, FONT, configure_ttk, load_photo, set_window_geometry
 
-def _hover_btn(btn, normal, hover):
-    btn.bind('<Enter>', lambda e: btn.configure(bg=hover))
-    btn.bind('<Leave>', lambda e: btn.configure(bg=normal))
+
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+_ICON_PATH = os.path.join(_BASE_DIR, '扫雷图标.png')
+_BOMB_ICON = os.path.join(_BASE_DIR, 'bomb32.png')
+
 
 class MainApp:
-    def __init__(self):
-        self.root=tk.Tk()
-        if os.path.exists(_ICON_PATH):
-            self._icon=tk.PhotoImage(file=_ICON_PATH)
-            self.root.iconphoto(True,self._icon)
+    def __init__(self, *, start_loop: bool = True):
+        self.root = tk.Tk()
+        configure_ttk(self.root)
+        self.current_user: dict | None = None
+        self.current_frame: tk.Widget | None = None
+        self._icon = load_photo(_ICON_PATH, master=self.root)
+        if self._icon is not None:
+            self.root.iconphoto(True, self._icon)
+
         self.root.title(t('title'))
-        self.root.geometry("580x600")
-        self.root.minsize(500,520)
-        self.root.resizable(True,True)
-        self.root.configure(bg='#0f0f23')
-        self.current_user=None;self.current_frame=None
-        init_db();self._show_auth()
-        self.root.protocol("WM_DELETE_WINDOW",self._quit)
-        self.root.mainloop()
-    def _swap(self,frame_class,*args):
-        if self.current_frame:self.current_frame.destroy()
-        self.current_frame=frame_class(self.root,*args)
-        self.current_frame.pack(fill=tk.BOTH,expand=True)
-    def _show_auth(self):
+        set_window_geometry(self.root, 560, 680, 460, 560)
+        self.root.resizable(True, True)
+        self.root.protocol('WM_DELETE_WINDOW', self._quit)
+        self.root.bind('<Escape>', lambda _event: self._handle_escape())
+        init_db()
+        self._show_auth()
+        if start_loop:
+            self.root.mainloop()
+
+    def _swap(self, frame_class, *args) -> None:
+        if self.current_frame is not None:
+            self.current_frame.destroy()
+        self.current_frame = frame_class(self.root, *args)
+        self.current_frame.pack(fill=tk.BOTH, expand=True)
+
+    def _show_auth(self) -> None:
         self.root.title(t('title'))
-        self.root.geometry("520x580")
-        self._swap(AuthFrame,self._on_login)
-    def _on_login(self,user:dict):self.current_user=user;self._show_menu()
-    def _show_menu(self):
-        self.root.title(t('title'))
-        self.root.geometry("620x640")
-        self.root.configure(bg='#0f0f23')
-        if self.current_frame:self.current_frame.destroy()
-        self.current_frame=tk.Frame(self.root,bg='#0f0f23')
-        self.current_frame.pack(fill=tk.BOTH,expand=True)
-        f=tk.Frame(self.current_frame,bg='#0f0f23');f.pack(expand=True)
-        if os.path.exists(_BOMB_ICON):
-            img=tk.PhotoImage(file=_BOMB_ICON);f.img=img
-            tk.Label(f,image=img,bg='#0f0f23').pack(pady=(25,0))
-        tk.Label(f,text=t('title'),font=('微软雅黑',36,'bold'),bg='#0f0f23',fg='#e94560').pack()
-        tk.Label(f,text=t('welcome',self.current_user['username']),font=('微软雅黑',13),bg='#0f0f23',fg='#a0a0b0').pack(pady=(4,30))
-        card_row=tk.Frame(f,bg='#0f0f23');card_row.pack(pady=10)
-        difficulties=[('9x9',t('diff_easy'),'#00b894','#55efc4',t('desc_easy')),('27x27',t('diff_medium'),'#fdcb6e','#ffeaa7',t('desc_medium')),('81x81',t('diff_hard'),'#e17055','#fab1a0',t('desc_hard'))]
-        for diff_key,label,color,light,desc in difficulties:
-            card=tk.Frame(card_row,bg='#1a1a2e',bd=0,highlightbackground=color,highlightthickness=1)
-            card.pack(side=tk.LEFT,padx=12,ipadx=12,ipady=12)
-            tk.Frame(card,bg=color,height=4).pack(fill=tk.X)
-            inner=tk.Frame(card,bg='#1a1a2e');inner.pack(padx=22,pady=18)
-            tk.Label(inner,text=label,font=('微软雅黑',16,'bold'),bg='#1a1a2e',fg=color).pack()
-            tk.Label(inner,text=desc,font=('微软雅黑',10),bg='#1a1a2e',fg='#707080').pack(pady=(4,12))
-            btn=tk.Button(inner,text=t('btn_start'),font=('微软雅黑',11,'bold'),bg=color,fg='#0f0f23',activebackground=light,relief='flat',bd=0,padx=22,pady=8,cursor='hand2',command=lambda d=diff_key:self._start_game(d))
-            _hover_btn(btn,color,light);btn.pack()
-        bottom=tk.Frame(f,bg='#0f0f23');bottom.pack(pady=30)
-        for text,cmd in [(t('btn_ranking'),self._show_ranking),(t('btn_logout'),self._logout)]:
-            b=tk.Button(bottom,text=text,font=('微软雅黑',11),bg='#1a1a2e',fg='#a0a0b0',activebackground='#16213e',relief='flat',bd=0,padx=28,pady=10,cursor='hand2',command=cmd)
-            _hover_btn(b,'#1a1a2e','#253350');b.pack(side=tk.LEFT,padx=10)
-    def _start_game(self,difficulty:str):self._swap(GameFrame,self.current_user,difficulty,self._show_menu)
-    def _show_ranking(self):self._swap(RankingFrame,self.current_user,self._show_menu)
-    def _logout(self):
-        if messagebox.askyesno(t('btn_logout'),t('logout_confirm')):self.current_user=None;self._show_auth()
-    def _quit(self):
-        if self.current_user:
-            if messagebox.askyesno(t('title'),t('quit_confirm')):self.root.quit()
-        else:self.root.quit()
-if __name__=='__main__':MainApp()
+        set_window_geometry(self.root, 560, 680, 460, 600)
+        self._swap(AuthFrame, self._on_login)
+
+    def _on_login(self, user: dict) -> None:
+        self.current_user = user
+        self._show_menu()
+
+    def _show_menu(self) -> None:
+        self.root.title(t('menu_title'))
+        set_window_geometry(self.root, 820, 680, 680, 580)
+        if self.current_frame is not None:
+            self.current_frame.destroy()
+
+        frame = tk.Frame(self.root, bg=COLORS['bg'])
+        frame.pack(fill=tk.BOTH, expand=True)
+        self.current_frame = frame
+
+        header = tk.Frame(frame, bg=COLORS['bg'])
+        header.pack(fill=tk.X, padx=42, pady=(28, 8))
+        image = load_photo(_BOMB_ICON, master=self.root)
+        if image is not None:
+            self._menu_icon = image
+            tk.Label(header, image=image, bg=COLORS['bg']).pack(side=tk.LEFT, padx=(0, 14))
+        title_block = tk.Frame(header, bg=COLORS['bg'])
+        title_block.pack(side=tk.LEFT, anchor='w')
+        tk.Label(
+            title_block, text=t('menu_title'), font=(FONT, 25, 'bold'),
+            bg=COLORS['bg'], fg=COLORS['text'],
+        ).pack(anchor='w')
+        tk.Label(
+            title_block, text=t('welcome', self.current_user['username']),
+            font=(FONT, 10), bg=COLORS['bg'], fg=COLORS['muted'],
+        ).pack(anchor='w', pady=(4, 0))
+        ttk.Button(
+            header, text=t('btn_logout'), style='Ghost.TButton',
+            command=self._logout,
+        ).pack(side=tk.RIGHT, anchor='n')
+
+        body = tk.Frame(frame, bg=COLORS['bg'])
+        body.pack(fill=tk.BOTH, expand=True, padx=42, pady=(20, 30))
+        body.grid_columnconfigure((0, 1, 2), weight=1, uniform='difficulty')
+        body.grid_rowconfigure(0, weight=1)
+
+        difficulties = [
+            ('9x9', t('diff_easy'), t('desc_easy'), COLORS['success']),
+            ('27x27', t('diff_medium'), t('desc_medium'), COLORS['warning']),
+            ('81x81', t('diff_hard'), t('desc_hard'), COLORS['danger']),
+        ]
+        for column, (key, label, description, accent) in enumerate(difficulties):
+            self._difficulty_card(body, column, key, label, description, accent)
+
+        footer = tk.Frame(frame, bg=COLORS['bg'])
+        footer.pack(fill=tk.X, padx=42, pady=(0, 28))
+        ttk.Button(
+            footer, text=t('btn_ranking'), style='Secondary.TButton',
+            command=self._show_ranking,
+        ).pack(side=tk.LEFT)
+        tk.Label(
+            footer, text='选择一个难度开始挑战', font=(FONT, 9),
+            bg=COLORS['bg'], fg=COLORS['subtle'],
+        ).pack(side=tk.RIGHT)
+
+    def _difficulty_card(self, parent, column: int, key: str, label: str,
+                         description: str, accent: str) -> None:
+        card = tk.Frame(
+            parent, bg=COLORS['surface'],
+            highlightbackground=COLORS['border'], highlightthickness=1,
+        )
+        card.grid(row=0, column=column, sticky='nsew', padx=(0 if column == 0 else 8, 8 if column < 2 else 0))
+        tk.Frame(card, bg=accent, height=5).pack(fill=tk.X)
+        content = tk.Frame(card, bg=COLORS['surface'])
+        content.pack(fill=tk.BOTH, expand=True, padx=22, pady=26)
+        tk.Label(
+            content, text=label, font=(FONT, 16, 'bold'),
+            bg=COLORS['surface'], fg=accent,
+        ).pack(anchor='w')
+        cfg = DIFFICULTY_CONFIG[key]
+        tk.Label(
+            content, text=f"{cfg['rows']} × {cfg['cols']}   ·   {cfg['mines']} mines",
+            font=(FONT, 10, 'bold'), bg=COLORS['surface'], fg=COLORS['text'],
+        ).pack(anchor='w', pady=(12, 4))
+        tk.Label(
+            content, text=description, wraplength=180, justify='left',
+            font=(FONT, 9), bg=COLORS['surface'], fg=COLORS['muted'],
+        ).pack(anchor='w')
+        ttk.Button(
+            content, text=t('btn_start'), style='Primary.TButton',
+            command=lambda selected=key: self._start_game(selected),
+        ).pack(fill=tk.X, pady=(28, 0))
+
+    def _start_game(self, difficulty: str) -> None:
+        self._swap(GameFrame, self.current_user, difficulty, self._show_menu)
+
+    def _show_ranking(self) -> None:
+        self._swap(RankingFrame, self.current_user, self._show_menu)
+
+    def _logout(self) -> None:
+        if messagebox.askyesno(t('btn_logout'), t('logout_confirm'), parent=self.root):
+            self.current_user = None
+            self._show_auth()
+
+    def _handle_escape(self) -> None:
+        if self.current_user and isinstance(self.current_frame, (GameFrame, RankingFrame)):
+            self._show_menu()
+
+    def _quit(self) -> None:
+        if self.current_user and not messagebox.askyesno(
+            t('title'), t('quit_confirm'), parent=self.root):
+            return
+        self.root.destroy()
+
+
+if __name__ == '__main__':
+    MainApp()
