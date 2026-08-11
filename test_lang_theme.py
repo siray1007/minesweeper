@@ -8,7 +8,7 @@ class LanguageThemeTests(unittest.TestCase):
     def test_core_language_keys_exist(self):
         required = {
             "title", "login", "register", "menu_title", "rank_title",
-            "btn_start", "btn_restart", "btn_ranking", "btn_logout",
+            "btn_start", "btn_restart", "btn_ranking", "btn_logout", "btn_quick_start",
             "status_local_loaded", "status_cloud_done", "control_hint",
             "auth_kicker", "auth_status", "menu_subtitle", "mine_density",
             "board_status_ready", "rank_empty_marker",

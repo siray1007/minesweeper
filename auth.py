@@ -5,7 +5,7 @@ import os
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from database import login_user, register_user
+from database import get_or_create_local_user, login_user, register_user
 from lang import LANG_OPTIONS, get_lang, save_lang, t
 from ui_theme import COLORS, FONT, FONT_MONO, configure_ttk, load_photo, make_entry, make_panel
 
@@ -113,7 +113,7 @@ class AuthFrame(tk.Frame):
         self._mode = "login"
         self._clear()
         self._language_selector()
-        _, card = self._create_card(548)
+        _, card = self._create_card(590)
         self._header(card, t("login"))
 
         form = tk.Frame(card, bg=COLORS["surface"])
@@ -124,6 +124,10 @@ class AuthFrame(tk.Frame):
         ttk.Button(form, text=t("btn_login"), style="Primary.TButton", command=self._do_login).pack(
             fill=tk.X, pady=(2, 14)
         )
+        self.quick_start_button = ttk.Button(
+            form, text=t("btn_quick_start"), style="Secondary.TButton", command=self._quick_login
+        )
+        self.quick_start_button.pack(fill=tk.X, pady=(0, 14))
 
         tk.Frame(form, bg=COLORS["border"], height=1).pack(fill=tk.X, pady=(2, 12))
         tk.Label(form, text=t("no_account"), font=(FONT, 9), bg=COLORS["surface"], fg=COLORS["subtle"]).pack(
@@ -175,6 +179,9 @@ class AuthFrame(tk.Frame):
             messagebox.showerror(t("login_fail"), result, parent=self)
             self._pwd.selection_range(0, tk.END)
             self._pwd.focus_set()
+
+    def _quick_login(self) -> None:
+        self.on_login(get_or_create_local_user())
 
     def _do_register(self) -> None:
         username = self._reg_user.get().strip()

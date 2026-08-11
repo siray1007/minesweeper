@@ -86,6 +86,29 @@ def register_user(username: str, password: str) -> tuple:
         conn.close()
 
 
+def get_or_create_local_user(username: str = "CyberPilot") -> dict:
+    """Return a local no-password pilot account for quick private play."""
+    username = username.strip() or "CyberPilot"
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT id, username FROM users WHERE username = ?", (username,))
+    user = c.fetchone()
+    if user:
+        conn.close()
+        return dict(user)
+
+    pwd_hash = hash_password(f"local::{username}")
+    c.execute(
+        "INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)",
+        (username, pwd_hash, datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+    )
+    conn.commit()
+    c.execute("SELECT id, username FROM users WHERE username = ?", (username,))
+    created = c.fetchone()
+    conn.close()
+    return dict(created)
+
+
 def login_user(username: str, password: str) -> tuple:
     conn = get_db()
     c = conn.cursor()
