@@ -6,7 +6,7 @@ from tkinter import ttk
 
 from database import _gitee_fetch_rankings, get_rankings_local
 from lang import t
-from ui_theme import COLORS, FONT, configure_ttk
+from ui_theme import COLORS, FONT, FONT_MONO, configure_ttk, make_panel
 
 
 class RankingFrame(tk.Frame):
@@ -21,21 +21,31 @@ class RankingFrame(tk.Frame):
         self._cloud_job = self.after(250, self._fetch_cloud_step)
 
     def _build_ui(self) -> None:
-        bar = tk.Frame(self, bg=COLORS["surface"], height=66)
-        bar.pack(fill=tk.X)
+        bar_outer, bar = make_panel(self, bg=COLORS["surface"], border=COLORS["border_hot"])
+        bar_outer.pack(fill=tk.X, padx=16, pady=(16, 0))
+        bar.configure(height=74)
         bar.pack_propagate(False)
         ttk.Button(bar, text=t("btn_back"), style="Ghost.TButton", command=self._back).pack(
             side=tk.LEFT, padx=18, pady=12
         )
-        tk.Label(bar, text=t("rank_title"), font=(FONT, 20, "bold"), bg=COLORS["surface"], fg=COLORS["text"]).pack(
-            side=tk.LEFT, padx=10
-        )
+        title_stack = tk.Frame(bar, bg=COLORS["surface"])
+        title_stack.pack(side=tk.LEFT, padx=10, pady=12)
+        tk.Label(
+            title_stack, text=t("rank_title"), font=(FONT, 20, "bold"), bg=COLORS["surface"], fg=COLORS["text"]
+        ).pack(anchor="w")
+        tk.Label(
+            title_stack,
+            text=t("rank_subtitle"),
+            font=(FONT_MONO, 8),
+            bg=COLORS["surface"],
+            fg=COLORS["muted"],
+        ).pack(anchor="w", pady=(4, 0))
         tk.Label(
             bar,
             text=t("current_user", self.current_user["username"]),
-            font=(FONT, 9),
+            font=(FONT_MONO, 9, "bold"),
             bg=COLORS["surface"],
-            fg=COLORS["muted"],
+            fg=COLORS["primary"],
         ).pack(side=tk.RIGHT, padx=22)
 
         self.status_label = tk.Label(
@@ -93,11 +103,13 @@ class RankingFrame(tk.Frame):
         ):
             table.heading(column, text=title)
             table.column(column, width=width, anchor="center", stretch=True)
-        scrollbar = ttk.Scrollbar(parent, orient=tk.VERTICAL, command=table.yview)
+        scrollbar = ttk.Scrollbar(parent, orient=tk.VERTICAL, command=table.yview, style="Cyber.Vertical.TScrollbar")
         table.configure(yscrollcommand=scrollbar.set)
         table.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(16, 0), pady=16)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y, padx=(0, 16), pady=16)
         table.tag_configure("me", foreground=COLORS["primary"])
+        table.tag_configure("top", foreground=COLORS["warning"])
+        table.tag_configure("empty", foreground=COLORS["disabled"])
         self._trees[difficulty] = table
         self._populate_tree(table, self._dedup_best(get_rankings_local(difficulty)))
 
@@ -105,12 +117,14 @@ class RankingFrame(tk.Frame):
         for item in table.get_children():
             table.delete(item)
         if not rankings:
-            table.insert("", tk.END, values=("—", t("no_data"), "—", "—"))
+            table.insert("", tk.END, values=("--", t("rank_empty_marker"), t("no_data"), "--"), tags=("empty",))
             return
         for rank, record in enumerate(rankings, 1):
             minutes, seconds = divmod(int(record.get("time_seconds", 0)), 60)
             date = record.get("completed_at") or record.get("created_at", "—")
             tags = ("me",) if record.get("username") == self.current_user.get("username") else ()
+            if rank <= 3 and not tags:
+                tags = ("top",)
             table.insert(
                 "",
                 tk.END,
@@ -129,7 +143,7 @@ class RankingFrame(tk.Frame):
         ):
             table.heading(column, text=title)
             table.column(column, width=width, anchor="center", stretch=True)
-        scrollbar = ttk.Scrollbar(parent, orient=tk.VERTICAL, command=table.yview)
+        scrollbar = ttk.Scrollbar(parent, orient=tk.VERTICAL, command=table.yview, style="Cyber.Vertical.TScrollbar")
         table.configure(yscrollcommand=scrollbar.set)
         table.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(16, 0), pady=16)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y, padx=(0, 16), pady=16)
@@ -147,8 +161,9 @@ class RankingFrame(tk.Frame):
                         )
                     )
         records.sort(key=lambda item: item[1])
+        table.tag_configure("empty", foreground=COLORS["disabled"])
         if not records:
-            table.insert("", tk.END, values=("—", t("no_records"), "—"))
+            table.insert("", tk.END, values=("--", t("no_records"), "--"), tags=("empty",))
             return
         for label, total_seconds, date in records:
             minutes, seconds = divmod(total_seconds, 60)

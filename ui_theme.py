@@ -8,24 +8,35 @@ from tkinter import ttk
 
 COLORS = {
     "bg": "#070b14",
+    "bg_grid": "#0b1728",
     "surface": "#0d1320",
     "surface_alt": "#111a2c",
+    "surface_metal": "#172033",
     "surface_hover": "#162238",
     "border": "#22314a",
+    "border_hot": "#2ce6ff",
+    "border_dim": "#172237",
     "text": "#edf3ff",
     "muted": "#8a97b2",
     "subtle": "#5d687f",
+    "disabled": "#3f4b61",
     "primary": "#34d6ff",
     "primary_hover": "#67e3ff",
     "primary_pressed": "#179cc2",
     "success": "#35e0a1",
     "warning": "#ffd166",
     "danger": "#ff5c7a",
+    "danger_dim": "#391320",
     "accent": "#9b6dff",
     "input": "#050812",
+    "tile_even": "#121b2d",
+    "tile_odd": "#0f1727",
+    "tile_open": "#1b2638",
+    "tile_flag": "#241a2a",
 }
 
 FONT = "Microsoft YaHei UI"
+FONT_MONO = "Consolas"
 
 
 def configure_ttk(root: tk.Misc) -> None:
@@ -122,6 +133,24 @@ def configure_ttk(root: tk.Misc) -> None:
         foreground=[("selected", "#08101b")],
     )
 
+    for orientation in ("Vertical", "Horizontal"):
+        style.configure(
+            f"Cyber.{orientation}.TScrollbar",
+            gripcount=0,
+            background=COLORS["surface_metal"],
+            darkcolor=COLORS["surface"],
+            lightcolor=COLORS["surface_hover"],
+            troughcolor=COLORS["input"],
+            bordercolor=COLORS["border"],
+            arrowcolor=COLORS["primary"],
+            relief="flat",
+            width=14,
+        )
+        style.map(
+            f"Cyber.{orientation}.TScrollbar",
+            background=[("active", COLORS["surface_hover"]), ("pressed", COLORS["primary_pressed"])],
+        )
+
 
 def load_photo(path: str, master: tk.Misc | None = None) -> tk.PhotoImage | None:
     """Load a PNG without passing a non-ASCII Windows path to Tcl."""
@@ -149,6 +178,39 @@ def make_entry(parent: tk.Misc, *, show: str = "") -> tk.Entry:
         highlightbackground=COLORS["border"],
         highlightcolor=COLORS["primary"],
     )
+
+
+def make_panel(parent: tk.Misc, *, bg: str | None = None, border: str | None = None) -> tuple[tk.Frame, tk.Frame]:
+    """Create a crisp one-pixel bordered panel and return (outer, inner)."""
+    outer = tk.Frame(parent, bg=border or COLORS["border"], bd=0, highlightthickness=0)
+    inner = tk.Frame(outer, bg=bg or COLORS["surface"], bd=0, highlightthickness=0)
+    inner.pack(fill=tk.BOTH, expand=True, padx=1, pady=1)
+    return outer, inner
+
+
+def metric_label(parent: tk.Misc, label: str, value: str, *, accent: str | None = None) -> tk.Frame:
+    """Small terminal-style metric block."""
+    frame = tk.Frame(parent, bg=COLORS["surface"])
+    tk.Label(frame, text=label.upper(), font=(FONT_MONO, 8), bg=COLORS["surface"], fg=COLORS["subtle"]).pack(
+        anchor="w"
+    )
+    tk.Label(
+        frame,
+        text=value,
+        font=(FONT_MONO, 13, "bold"),
+        bg=COLORS["surface"],
+        fg=accent or COLORS["text"],
+    ).pack(anchor="w", pady=(2, 0))
+    return frame
+
+
+def draw_grid_background(canvas: tk.Canvas, width: int, height: int, *, step: int = 32) -> None:
+    """Draw a restrained cyber grid on a Tk canvas."""
+    for x in range(0, width + 1, step):
+        canvas.create_line(x, 0, x, height, fill=COLORS["bg_grid"], width=1)
+    for y in range(0, height + 1, step):
+        canvas.create_line(0, y, width, y, fill=COLORS["bg_grid"], width=1)
+    canvas.create_line(0, 0, width, 0, fill=COLORS["border_hot"], width=1)
 
 
 def set_window_geometry(root: tk.Misc, width: int, height: int, min_width: int, min_height: int) -> None:

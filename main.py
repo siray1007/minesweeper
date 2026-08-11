@@ -7,15 +7,19 @@ from tkinter import messagebox, ttk
 
 from auth import AuthFrame
 from database import init_db
-from game import DIFFICULTY_CONFIG, GameFrame
+from game import DIFFICULTY_CONFIG, GameFrame, board_density
 from lang import t
 from ranking import RankingFrame
-from ui_theme import COLORS, FONT, configure_ttk, load_photo, set_window_geometry
+from ui_theme import COLORS, FONT, FONT_MONO, configure_ttk, load_photo, make_panel, metric_label, set_window_geometry
 
 
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 _ICON_PATH = os.path.join(_BASE_DIR, "扫雷图标.png")
 _BOMB_ICON = os.path.join(_BASE_DIR, "bomb32.png")
+
+
+def threat_key(difficulty: str) -> str:
+    return {"9x9": "threat_low", "27x27": "threat_medium", "81x81": "threat_high"}[difficulty]
 
 
 class MainApp:
@@ -63,30 +67,42 @@ class MainApp:
         frame.pack(fill=tk.BOTH, expand=True)
         self.current_frame = frame
 
-        header = tk.Frame(frame, bg=COLORS["bg"])
-        header.pack(fill=tk.X, padx=32, pady=(24, 12))
+        header_outer, header = make_panel(frame, bg=COLORS["surface"], border=COLORS["border_hot"])
+        header_outer.pack(fill=tk.X, padx=32, pady=(24, 12))
         image = load_photo(_BOMB_ICON, master=self.root)
         if image is not None:
             self._menu_icon = image
-            tk.Label(header, image=image, bg=COLORS["bg"]).pack(side=tk.LEFT, padx=(0, 14))
-        title_block = tk.Frame(header, bg=COLORS["bg"])
-        title_block.pack(side=tk.LEFT, anchor="w")
+            tk.Label(header, image=image, bg=COLORS["surface"]).pack(side=tk.LEFT, padx=(18, 14), pady=16)
+        title_block = tk.Frame(header, bg=COLORS["surface"])
+        title_block.pack(side=tk.LEFT, anchor="w", pady=14)
+        tk.Label(
+            title_block,
+            text="NEON_SWEEP // MINEFIELD OPS",
+            font=(FONT_MONO, 9, "bold"),
+            bg=COLORS["surface"],
+            fg=COLORS["primary"],
+        ).pack(anchor="w")
         tk.Label(
             title_block,
             text=t("menu_title"),
             font=(FONT, 24, "bold"),
-            bg=COLORS["bg"],
+            bg=COLORS["surface"],
             fg=COLORS["text"],
         ).pack(anchor="w")
         tk.Label(
             title_block,
-            text=t("welcome", self.current_user["username"]),
+            text=t("menu_subtitle"),
             font=(FONT, 10),
-            bg=COLORS["bg"],
+            bg=COLORS["surface"],
             fg=COLORS["muted"],
-        ).pack(anchor="w", pady=(4, 0))
+        ).pack(anchor="w", pady=(3, 0))
+        operator = tk.Frame(header, bg=COLORS["surface"])
+        operator.pack(side=tk.RIGHT, padx=(12, 18), pady=12)
+        metric_label(operator, t("operator_label"), self.current_user["username"], accent=COLORS["primary"]).pack(
+            side=tk.LEFT, padx=(0, 20)
+        )
         ttk.Button(header, text=t("btn_logout"), style="Ghost.TButton", command=self._logout).pack(
-            side=tk.RIGHT, anchor="n"
+            side=tk.RIGHT, anchor="n", padx=(0, 8), pady=16
         )
 
         body = tk.Frame(frame, bg=COLORS["bg"])
@@ -95,12 +111,12 @@ class MainApp:
         body.grid_rowconfigure(0, weight=1)
 
         difficulties = [
-            ("9x9", t("diff_easy"), t("desc_easy"), COLORS["success"]),
-            ("27x27", t("diff_medium"), t("desc_medium"), COLORS["warning"]),
-            ("81x81", t("diff_hard"), t("desc_hard"), COLORS["danger"]),
+            ("9x9", "TRAINING", t("diff_easy"), t("desc_easy"), COLORS["success"]),
+            ("27x27", "ADVANCED", t("diff_medium"), t("desc_medium"), COLORS["warning"]),
+            ("81x81", "EXTREME", t("diff_hard"), t("desc_hard"), COLORS["danger"]),
         ]
-        for column, (key, label, description, accent) in enumerate(difficulties):
-            self._difficulty_card(body, column, key, label, description, accent)
+        for column, (key, code, label, description, accent) in enumerate(difficulties):
+            self._difficulty_card(body, column, key, code, label, description, accent)
 
         footer = tk.Frame(frame, bg=COLORS["bg"])
         footer.pack(fill=tk.X, padx=32, pady=(0, 24))
@@ -115,26 +131,34 @@ class MainApp:
             fg=COLORS["subtle"],
         ).pack(side=tk.RIGHT)
 
-    def _difficulty_card(self, parent, column: int, key: str, label: str, description: str, accent: str) -> None:
-        card = tk.Frame(
-            parent,
-            bg=COLORS["surface"],
-            highlightbackground=COLORS["border"],
-            highlightthickness=1,
-        )
+    def _difficulty_card(
+        self, parent, column: int, key: str, code: str, label: str, description: str, accent: str
+    ) -> None:
+        card, content = make_panel(parent, bg=COLORS["surface"], border=accent)
         card.grid(row=0, column=column, sticky="nsew", padx=(0 if column == 0 else 8, 8 if column < 2 else 0))
-        tk.Frame(card, bg=accent, height=4).pack(fill=tk.X)
-        content = tk.Frame(card, bg=COLORS["surface"])
+        tk.Frame(content, bg=accent, height=4).pack(fill=tk.X)
+        content = tk.Frame(content, bg=COLORS["surface"])
         content.pack(fill=tk.BOTH, expand=True, padx=20, pady=22)
+        tk.Label(content, text=f"MODE // {code}", font=(FONT_MONO, 9, "bold"), bg=COLORS["surface"], fg=accent).pack(
+            anchor="w"
+        )
         tk.Label(content, text=label, font=(FONT, 16, "bold"), bg=COLORS["surface"], fg=accent).pack(anchor="w")
         cfg = DIFFICULTY_CONFIG[key]
+        metrics = tk.Frame(content, bg=COLORS["surface"])
+        metrics.pack(fill=tk.X, pady=(16, 12))
+        metric_label(metrics, t("grid_label"), f"{cfg['rows']}x{cfg['cols']}", accent=COLORS["text"]).pack(
+            side=tk.LEFT, expand=True, fill=tk.X
+        )
+        metric_label(metrics, t("mine_density"), board_density(cfg), accent=accent).pack(
+            side=tk.LEFT, expand=True, fill=tk.X
+        )
         tk.Label(
             content,
-            text=f"{cfg['rows']} x {cfg['cols']}   |   {cfg['mines']} mines",
-            font=(FONT, 10, "bold"),
+            text=f"{t('threat_label')}: {t(threat_key(key))}  /  {cfg['mines']} mines",
+            font=(FONT_MONO, 10, "bold"),
             bg=COLORS["surface"],
-            fg=COLORS["text"],
-        ).pack(anchor="w", pady=(10, 4))
+            fg=accent,
+        ).pack(anchor="w", pady=(2, 8))
         tk.Label(
             content,
             text=description,
