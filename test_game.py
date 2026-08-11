@@ -1,13 +1,26 @@
 import random
 import unittest
 
-from game import DIFFICULTY_CONFIG, MinesweeperGame, board_density
+from game import DIFFICULTY_CONFIG, MinesweeperGame, board_density, clearance_percent, flag_count
 
 
 class MinesweeperGameTests(unittest.TestCase):
     def test_board_density_uses_mine_ratio(self):
         self.assertEqual(board_density(DIFFICULTY_CONFIG["9x9"]), "12.3%")
         self.assertEqual(board_density(DIFFICULTY_CONFIG["27x27"]), "13.7%")
+
+    def test_hud_helpers_track_clearance_and_flags(self):
+        game = MinesweeperGame("9x9", rng=random.Random(11))
+
+        self.assertEqual(clearance_percent(game), 0)
+        self.assertEqual(flag_count(game), 0)
+
+        game.toggle_flag(0, 0)
+        game.reveal(4, 4)
+
+        self.assertEqual(flag_count(game), 1)
+        self.assertGreaterEqual(clearance_percent(game), 1)
+        self.assertLessEqual(clearance_percent(game), 100)
 
     def test_rejects_unknown_difficulty(self):
         with self.assertRaises(ValueError):

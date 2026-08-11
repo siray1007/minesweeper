@@ -39,6 +39,52 @@ FONT = "Microsoft YaHei UI"
 FONT_MONO = "Consolas"
 
 
+class CyberButton(tk.Button):
+    """A hard-edged Tk button that does not inherit platform ttk softness."""
+
+    def __init__(
+        self,
+        parent: tk.Misc,
+        text: str,
+        command=None,
+        *,
+        variant: str = "primary",
+        width: int = 0,
+    ):
+        if variant == "primary":
+            bg, fg, active_bg = COLORS["primary"], "#08101b", COLORS["primary_hover"]
+            border = COLORS["primary"]
+        elif variant == "danger":
+            bg, fg, active_bg = COLORS["danger_dim"], COLORS["text"], COLORS["danger"]
+            border = COLORS["danger"]
+        else:
+            bg, fg, active_bg = COLORS["surface_metal"], COLORS["text"], COLORS["surface_hover"]
+            border = COLORS["border_hot"]
+        super().__init__(
+            parent,
+            text=text,
+            command=command,
+            font=(FONT, 10, "bold"),
+            bg=bg,
+            fg=fg,
+            activebackground=active_bg,
+            activeforeground=fg,
+            relief="flat",
+            bd=0,
+            highlightthickness=1,
+            highlightbackground=border,
+            highlightcolor=border,
+            padx=16,
+            pady=9,
+            cursor="hand2",
+            width=width,
+        )
+        self._normal_bg = bg
+        self._hover_bg = active_bg
+        self.bind("<Enter>", lambda _event: self.configure(bg=self._hover_bg))
+        self.bind("<Leave>", lambda _event: self.configure(bg=self._normal_bg))
+
+
 def configure_ttk(root: tk.Misc) -> None:
     """Configure shared ttk styles for the app."""
     style = ttk.Style(root)
@@ -207,10 +253,54 @@ def metric_label(parent: tk.Misc, label: str, value: str, *, accent: str | None 
 def draw_grid_background(canvas: tk.Canvas, width: int, height: int, *, step: int = 32) -> None:
     """Draw a restrained cyber grid on a Tk canvas."""
     for x in range(0, width + 1, step):
-        canvas.create_line(x, 0, x, height, fill=COLORS["bg_grid"], width=1)
+        canvas.create_line(x, 0, x, height, fill=COLORS["bg_grid"], width=1, tags="grid")
     for y in range(0, height + 1, step):
-        canvas.create_line(0, y, width, y, fill=COLORS["bg_grid"], width=1)
-    canvas.create_line(0, 0, width, 0, fill=COLORS["border_hot"], width=1)
+        canvas.create_line(0, y, width, y, fill=COLORS["bg_grid"], width=1, tags="grid")
+    canvas.create_line(0, 0, width, 0, fill=COLORS["border_hot"], width=1, tags="grid")
+
+
+def install_backdrop(parent: tk.Misc) -> tk.Canvas:
+    """Install a lightweight animated cyber grid behind a frame."""
+    canvas = tk.Canvas(parent, bg=COLORS["bg"], highlightthickness=0, bd=0)
+    canvas.place(x=0, y=0, relwidth=1, relheight=1)
+    canvas.tk.call("lower", canvas._w)
+    state = {"scan": 0, "width": 1, "height": 1, "after_id": None}
+
+    def redraw(width: int, height: int) -> None:
+        state["width"], state["height"] = max(1, width), max(1, height)
+        canvas.delete("grid")
+        draw_grid_background(canvas, state["width"], state["height"], step=36)
+        for y in range(0, state["height"] + 1, 144):
+            canvas.create_line(0, y, state["width"], y, fill=COLORS["border_dim"], tags="grid")
+
+    def on_configure(event) -> None:
+        redraw(event.width, event.height)
+
+    def animate() -> None:
+        if not canvas.winfo_exists():
+            return
+        canvas.delete("scan")
+        state["scan"] = (state["scan"] + 7) % max(1, state["height"] + 80)
+        y = state["scan"] - 40
+        canvas.create_rectangle(0, y, state["width"], y + 2, fill=COLORS["primary"], outline="", tags="scan")
+        canvas.create_rectangle(
+            0, y + 3, state["width"], y + 16, fill=COLORS["bg_grid"], outline="", stipple="gray25", tags="scan"
+        )
+        state["after_id"] = canvas.after(80, animate)
+
+    def on_destroy(_event) -> None:
+        after_id = state.get("after_id")
+        if after_id:
+            try:
+                canvas.after_cancel(after_id)
+            except tk.TclError:
+                pass
+            state["after_id"] = None
+
+    canvas.bind("<Configure>", on_configure)
+    canvas.bind("<Destroy>", on_destroy)
+    state["after_id"] = canvas.after(120, animate)
+    return canvas
 
 
 def set_window_geometry(root: tk.Misc, width: int, height: int, min_width: int, min_height: int) -> None:
