@@ -5,11 +5,22 @@ import os
 import random
 import threading
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import ttk
 
 from database import _gitee_append_ranking, save_ranking
 from lang import t
-from ui_theme import COLORS, FONT, FONT_MONO, configure_ttk, load_photo, make_panel, set_window_geometry
+from ui_theme import (
+    COLORS,
+    FONT,
+    FONT_MONO,
+    CyberButton,
+    configure_ttk,
+    install_backdrop,
+    load_photo,
+    make_panel,
+    metric_label,
+    set_window_geometry,
+)
 
 
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -36,6 +47,16 @@ DIFFICULTY_CONFIG = {
 def board_density(config: dict) -> str:
     cells = max(1, int(config["rows"]) * int(config["cols"]))
     return f"{int(config['mines']) / cells * 100:.1f}%"
+
+
+def clearance_percent(game: "MinesweeperGame") -> int:
+    if game.total_safe_cells <= 0:
+        return 100
+    return min(100, int(game.revealed_count / game.total_safe_cells * 100))
+
+
+def flag_count(game: "MinesweeperGame") -> int:
+    return sum(game.flagged[row][col] for row in range(game.rows) for col in range(game.cols))
 
 
 class MinesweeperGame:
@@ -159,12 +180,14 @@ class MinesweeperGame:
 
 
 class GameFrame(tk.Frame):
-    def __init__(self, parent, user: dict, difficulty: str, on_back):
+    def __init__(self, parent, user: dict, difficulty: str, on_back, on_ranking=None):
         super().__init__(parent, bg=COLORS["bg"])
         configure_ttk(parent)
+        install_backdrop(self)
         self.user = user
         self.difficulty = difficulty
         self.on_back = on_back
+        self.on_ranking = on_ranking
         self.cfg = DIFFICULTY_CONFIG[difficulty]
         self.game = MinesweeperGame(difficulty)
         self.cell_size = self.cfg["cell"]
@@ -172,8 +195,11 @@ class GameFrame(tk.Frame):
         self.timer_seconds = 0
         self._after_id = None
         self.zoom = 1.0
+        self.hover_cell: tuple[int, int] | None = None
+        self._result_dialog: tk.Toplevel | None = None
         self._board_bg = COLORS["input"]
         self._build_ui()
+        self._bind_shortcuts()
         self._apply_window_size()
 
     def _apply_window_size(self) -> None:
@@ -192,7 +218,7 @@ class GameFrame(tk.Frame):
         bar.configure(height=72)
         bar.pack_propagate(False)
 
-        ttk.Button(bar, text=t("btn_back"), style="Ghost.TButton", command=self._back).pack(
+        CyberButton(bar, text=t("btn_back"), variant="secondary", command=self._back).pack(
             side=tk.LEFT, padx=8, pady=10
         )
         image = load_photo(_BOMB_PNG, master=self)
@@ -240,6 +266,24 @@ class GameFrame(tk.Frame):
             fg=COLORS["warning"],
         ).pack(anchor="e")
 
+        progress_box = tk.Frame(bar, bg=COLORS["surface"])
+        progress_box.pack(side=tk.RIGHT, padx=12, pady=8)
+        tk.Label(
+            progress_box,
+            text=t("clearance_label"),
+            font=(FONT_MONO, 8),
+            bg=COLORS["surface"],
+            fg=COLORS["subtle"],
+        ).pack(anchor="e")
+        self.progress_label = tk.Label(
+            progress_box,
+            text="000%",
+            font=(FONT_MONO, 15, "bold"),
+            bg=COLORS["surface"],
+            fg=COLORS["primary"],
+        )
+        self.progress_label.pack(anchor="e")
+
         timer_box = tk.Frame(bar, bg=COLORS["surface"])
         timer_box.pack(side=tk.RIGHT, padx=14, pady=8)
         tk.Label(timer_box, text=t("time_label"), font=(FONT_MONO, 8), bg=COLORS["surface"], fg=COLORS["subtle"]).pack(
@@ -251,6 +295,7 @@ class GameFrame(tk.Frame):
         self.timer_label.pack(anchor="e")
 
         self._update_mine_label()
+        self._update_progress_label()
         if self.difficulty == "81x81":
             self._build_large_board()
         else:
@@ -258,13 +303,13 @@ class GameFrame(tk.Frame):
 
         bottom = tk.Frame(self, bg=COLORS["bg"])
         bottom.pack(fill=tk.X, padx=20, pady=(0, 14))
-        ttk.Button(bottom, text=t("btn_restart"), style="Secondary.TButton", command=self.restart).pack(
+        CyberButton(bottom, text=t("btn_restart"), variant="secondary", command=self.restart).pack(
             side=tk.LEFT, padx=5
         )
         tk.Label(
             bottom,
-            text=t("zoom_fit"),
-            font=(FONT, 9),
+            text=t("quick_controls"),
+            font=(FONT_MONO, 9),
             bg=COLORS["bg"],
             fg=COLORS["subtle"],
         ).pack(side=tk.RIGHT, padx=6)
@@ -274,6 +319,7 @@ class GameFrame(tk.Frame):
         canvas.bind("<Double-Button-1>", self._double_click)
         canvas.bind("<Button-3>", self._right_click)
         canvas.bind("<Button-2>", self._right_click)
+        canvas.bind("<Leave>", self._clear_hover)
 
     def _build_small_board(self) -> None:
         width = self.cfg["cols"] * self.cell_size
@@ -290,6 +336,7 @@ class GameFrame(tk.Frame):
         )
         self.canvas.pack(padx=2, pady=2)
         self._bind_canvas(self.canvas)
+        self.canvas.bind("<Motion>", self._track_hover)
         self._draw_small()
 
     def _tile_colors(self, row: int, col: int) -> tuple[str, str]:
@@ -306,7 +353,13 @@ class GameFrame(tk.Frame):
             value = self.game.board[row][col]
             if value == -1:
                 canvas.create_rectangle(x1 + 3, y1 + 3, x2 - 3, y2 - 3, fill=COLORS["danger_dim"], outline="")
-                canvas.create_text(center_x, center_y, text="✹", font=("Arial", max(8, size // 2)), fill=COLORS["danger"])
+                canvas.create_text(
+                    center_x,
+                    center_y,
+                    text="X",
+                    font=("Consolas", max(8, size // 2), "bold"),
+                    fill=COLORS["danger"],
+                )
             elif value > 0:
                 canvas.create_text(
                     center_x,
@@ -318,13 +371,21 @@ class GameFrame(tk.Frame):
         elif self.game.flagged[row][col]:
             canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["tile_flag"], outline=COLORS["border"])
             canvas.create_line(x1 + 4, y1 + 4, x2 - 4, y1 + 4, fill=COLORS["danger"], width=2)
-            canvas.create_text(center_x, center_y, text="⚑", font=("Arial", max(8, size // 2)), fill=COLORS["danger"])
+            canvas.create_text(
+                center_x,
+                center_y,
+                text="F",
+                font=("Consolas", max(8, size // 2), "bold"),
+                fill=COLORS["danger"],
+            )
         else:
             fill, outline = self._tile_colors(row, col)
             canvas.create_rectangle(x1, y1, x2, y2, fill=fill, outline=outline)
             if small and size >= 28:
                 canvas.create_line(x1 + 3, y1 + 3, x2 - 4, y1 + 3, fill=COLORS["surface_hover"])
                 canvas.create_line(x1 + 3, y1 + 3, x1 + 3, y2 - 4, fill=COLORS["surface_hover"])
+        if small and self.hover_cell == (row, col) and not self.game.revealed[row][col]:
+            canvas.create_rectangle(x1 + 2, y1 + 2, x2 - 2, y2 - 2, outline=COLORS["border_hot"], width=2)
 
     def _draw_small(self) -> None:
         self.canvas.delete("all")
@@ -355,17 +416,17 @@ class GameFrame(tk.Frame):
 
         zoom_bar = tk.Frame(self, bg=COLORS["bg"])
         zoom_bar.pack(fill=tk.X, padx=20, pady=(0, 8))
-        ttk.Button(zoom_bar, text="−", style="Secondary.TButton", command=self._zoom_out, width=4).pack(
+        CyberButton(zoom_bar, text="−", variant="secondary", command=self._zoom_out, width=4).pack(
             side=tk.LEFT, padx=2
         )
         self.zoom_label = tk.Label(
             zoom_bar, text="100%", font=(FONT, 9, "bold"), bg=COLORS["bg"], fg=COLORS["muted"], width=6
         )
         self.zoom_label.pack(side=tk.LEFT, padx=4)
-        ttk.Button(zoom_bar, text="+", style="Secondary.TButton", command=self._zoom_in, width=4).pack(
+        CyberButton(zoom_bar, text="+", variant="secondary", command=self._zoom_in, width=4).pack(
             side=tk.LEFT, padx=2
         )
-        ttk.Button(zoom_bar, text=t("zoom_fit"), style="Ghost.TButton", command=self._zoom_reset).pack(
+        CyberButton(zoom_bar, text=t("zoom_fit"), variant="secondary", command=self._zoom_reset).pack(
             side=tk.LEFT, padx=10
         )
         self.canvas.bind("<MouseWheel>", self._on_mousewheel)
@@ -385,7 +446,13 @@ class GameFrame(tk.Frame):
                     value = self.game.board[row][col]
                     if value == -1 and size >= 10:
                         self.canvas.create_rectangle(x1 + 1, y1 + 1, x2 - 1, y2 - 1, fill=COLORS["danger_dim"], outline="")
-                        self.canvas.create_text(center_x, center_y, text="✹", font=("Arial", max(8, size // 2)), fill=COLORS["danger"])
+                        self.canvas.create_text(
+                            center_x,
+                            center_y,
+                            text="X",
+                            font=("Consolas", max(8, size // 2), "bold"),
+                            fill=COLORS["danger"],
+                        )
                     elif value > 0 and size >= 10:
                         self.canvas.create_text(
                             center_x,
@@ -397,7 +464,13 @@ class GameFrame(tk.Frame):
                 elif self.game.flagged[row][col]:
                     self.canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["tile_flag"], outline="")
                     if size >= 12:
-                        self.canvas.create_text(center_x, center_y, text="⚑", font=("Arial", max(8, size // 2)), fill=COLORS["danger"])
+                        self.canvas.create_text(
+                            center_x,
+                            center_y,
+                            text="F",
+                            font=("Consolas", max(8, size // 2), "bold"),
+                            fill=COLORS["danger"],
+                        )
                 else:
                     fill, _outline = self._tile_colors(row, col)
                     self.canvas.create_rectangle(x1, y1, x2, y2, fill=fill, outline="")
@@ -431,14 +504,29 @@ class GameFrame(tk.Frame):
         row, col = int(y // size), int(x // size)
         return (row, col) if 0 <= row < self.game.rows and 0 <= col < self.game.cols else (None, None)
 
+    def _track_hover(self, event):
+        row, col = self._get_cell(event.x, event.y)
+        next_cell = None if row is None else (row, col)
+        if next_cell != self.hover_cell:
+            self.hover_cell = next_cell
+            if self.difficulty != "81x81":
+                self._draw_small()
+
+    def _clear_hover(self, _event=None):
+        if self.hover_cell is not None:
+            self.hover_cell = None
+            if self.difficulty != "81x81":
+                self._draw_small()
+
     def _handle_result(self, result: str) -> None:
         self._redraw()
         self._update_mine_label()
+        self._update_progress_label()
         self._update_status()
         if result == "game_over":
             self._stop_timer()
             self._reveal_all_mines()
-            self.after(180, lambda: messagebox.showinfo(t("game_over"), t("game_over_msg"), parent=self))
+            self.after(180, lambda: self._show_result_panel("game_over"))
         elif result == "win":
             self._stop_timer()
             self.after(180, self._on_win)
@@ -464,6 +552,7 @@ class GameFrame(tk.Frame):
         self.game.toggle_flag(row, col)
         self._redraw()
         self._update_mine_label()
+        self._update_progress_label()
 
     def _double_click(self, event):
         if self.game.game_over or self.game.game_won:
@@ -501,6 +590,10 @@ class GameFrame(tk.Frame):
     def _update_mine_label(self):
         self.mine_label.configure(text=f"{self.game.remaining_mines:02d}")
 
+    def _update_progress_label(self):
+        if hasattr(self, "progress_label") and self.progress_label.winfo_exists():
+            self.progress_label.configure(text=f"{clearance_percent(self.game):03d}%")
+
     def _status_text(self) -> str:
         if self.game.game_won:
             return f"{t('sector_label')}: {t('board_status_clear')}"
@@ -526,14 +619,111 @@ class GameFrame(tk.Frame):
                     self.game.revealed[row][col] = True
         self._redraw()
 
+    def _close_result_dialog(self) -> None:
+        dialog = self._result_dialog
+        if dialog is not None and dialog.winfo_exists():
+            dialog.destroy()
+        self._result_dialog = None
+
+    def _show_result_panel(self, result: str) -> None:
+        if not self.winfo_exists():
+            return
+        self._close_result_dialog()
+        is_win = result == "win"
+        title = t("win_title") if is_win else t("game_over")
+        accent = COLORS["success"] if is_win else COLORS["danger"]
+        minutes, seconds = divmod(self.timer_seconds, 60)
+
+        dialog = tk.Toplevel(self)
+        self._result_dialog = dialog
+        dialog.title(title)
+        dialog.configure(bg=COLORS["bg"])
+        dialog.resizable(False, False)
+        dialog.transient(self.winfo_toplevel())
+        dialog.protocol("WM_DELETE_WINDOW", self._close_result_dialog)
+
+        outer, inner = make_panel(dialog, bg=COLORS["surface"], border=accent)
+        outer.pack(fill=tk.BOTH, expand=True, padx=14, pady=14)
+        tk.Label(
+            inner,
+            text=t("result_summary"),
+            font=(FONT_MONO, 9, "bold"),
+            bg=COLORS["surface"],
+            fg=accent,
+        ).pack(anchor="w", padx=24, pady=(22, 4))
+        tk.Label(inner, text=title, font=(FONT, 22, "bold"), bg=COLORS["surface"], fg=COLORS["text"]).pack(
+            anchor="w", padx=24
+        )
+        tk.Label(
+            inner,
+            text=t("result_win_tip") if is_win else t("result_failed_tip"),
+            font=(FONT, 10),
+            bg=COLORS["surface"],
+            fg=COLORS["muted"],
+            wraplength=360,
+            justify="left",
+        ).pack(anchor="w", padx=24, pady=(6, 18))
+
+        stats = tk.Frame(inner, bg=COLORS["surface"])
+        stats.pack(fill=tk.X, padx=24, pady=(0, 20))
+        metric_label(stats, t("time_label"), f"{minutes:02d}:{seconds:02d}", accent=accent).pack(
+            side=tk.LEFT, expand=True, fill=tk.X
+        )
+        metric_label(stats, t("clearance_label"), f"{clearance_percent(self.game):03d}%", accent=COLORS["primary"]).pack(
+            side=tk.LEFT, expand=True, fill=tk.X
+        )
+        metric_label(stats, t("flags_label"), str(flag_count(self.game)).zfill(2), accent=COLORS["text"]).pack(
+            side=tk.LEFT, expand=True, fill=tk.X
+        )
+
+        if is_win:
+            tk.Label(
+                inner,
+                text=t("result_saved"),
+                font=(FONT_MONO, 9, "bold"),
+                bg=COLORS["surface"],
+                fg=COLORS["success"],
+            ).pack(anchor="w", padx=24, pady=(0, 16))
+
+        buttons = tk.Frame(inner, bg=COLORS["surface"])
+        buttons.pack(fill=tk.X, padx=24, pady=(0, 24))
+
+        def restart_from_dialog() -> None:
+            self._close_result_dialog()
+            self.restart()
+
+        def lobby_from_dialog() -> None:
+            self._close_result_dialog()
+            self._back()
+
+        def records_from_dialog() -> None:
+            self._close_result_dialog()
+            self._stop_timer()
+            self._unbind_shortcuts()
+            if self.on_ranking is not None:
+                self.on_ranking()
+            else:
+                self.on_back()
+
+        CyberButton(buttons, text=t("btn_restart"), command=restart_from_dialog).pack(side=tk.LEFT, fill=tk.X, expand=True)
+        CyberButton(buttons, text=t("btn_lobby"), variant="secondary", command=lobby_from_dialog).pack(
+            side=tk.LEFT, fill=tk.X, expand=True, padx=8
+        )
+        CyberButton(buttons, text=t("btn_result_records"), variant="secondary", command=records_from_dialog).pack(
+            side=tk.LEFT, fill=tk.X, expand=True
+        )
+
+        dialog.update_idletasks()
+        root = self.winfo_toplevel()
+        x = root.winfo_rootx() + max(0, (root.winfo_width() - dialog.winfo_width()) // 2)
+        y = root.winfo_rooty() + max(0, (root.winfo_height() - dialog.winfo_height()) // 2)
+        dialog.geometry(f"+{x}+{y}")
+        dialog.grab_set()
+        dialog.focus_set()
+
     def _on_win(self):
         save_ranking(self.user["id"], self.difficulty, self.timer_seconds)
-        minutes, seconds = divmod(self.timer_seconds, 60)
-        messagebox.showinfo(
-            t("win_title"),
-            t("win_msg", self.cfg["title"], f"{minutes:02d}:{seconds:02d}"),
-            parent=self,
-        )
+        self._show_result_panel("win")
         threading.Thread(
             target=_gitee_append_ranking,
             args=(self.user["username"], self.difficulty, self.timer_seconds),
@@ -541,14 +731,37 @@ class GameFrame(tk.Frame):
         ).start()
 
     def _back(self):
+        self._close_result_dialog()
         self._stop_timer()
+        self._unbind_shortcuts()
         self.on_back()
 
     def restart(self):
+        self._close_result_dialog()
         self._stop_timer()
         self.timer_seconds = 0
         self.timer_label.configure(text="00:00")
         self.game = MinesweeperGame(self.difficulty)
         self._redraw()
         self._update_mine_label()
+        self._update_progress_label()
         self._update_status()
+
+    def _bind_shortcuts(self):
+        root = self.winfo_toplevel()
+        root.bind("r", self._restart_shortcut)
+        root.bind("R", self._restart_shortcut)
+
+    def _unbind_shortcuts(self):
+        root = self.winfo_toplevel()
+        root.unbind("r")
+        root.unbind("R")
+
+    def _restart_shortcut(self, _event=None):
+        self.restart()
+
+    def destroy(self):
+        self._close_result_dialog()
+        self._stop_timer()
+        self._unbind_shortcuts()
+        super().destroy()

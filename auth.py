@@ -3,11 +3,11 @@ from __future__ import annotations
 
 import os
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import messagebox
 
 from database import get_or_create_local_user, login_user, register_user
 from lang import LANG_OPTIONS, get_lang, save_lang, t
-from ui_theme import COLORS, FONT, FONT_MONO, configure_ttk, load_photo, make_entry, make_panel
+from ui_theme import COLORS, FONT, FONT_MONO, CyberButton, configure_ttk, install_backdrop, load_photo, make_entry, make_panel
 
 
 _ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bomb32.png")
@@ -17,12 +17,15 @@ class AuthFrame(tk.Frame):
     def __init__(self, parent: tk.Misc, on_login):
         super().__init__(parent, bg=COLORS["bg"])
         configure_ttk(parent)
+        self._backdrop = install_backdrop(self)
         self.on_login = on_login
         self._mode = "login"
         self._show_login()
 
     def _clear(self) -> None:
         for widget in self.winfo_children():
+            if widget is self._backdrop:
+                continue
             widget.destroy()
 
     def _change_language(self, language: str) -> None:
@@ -121,21 +124,17 @@ class AuthFrame(tk.Frame):
         self._user = self._field(form, t("username"))
         self._pwd = self._field(form, t("password"), show="*")
 
-        ttk.Button(form, text=t("btn_login"), style="Primary.TButton", command=self._do_login).pack(
+        CyberButton(form, text=t("btn_login"), command=self._do_login).pack(
             fill=tk.X, pady=(2, 14)
         )
-        self.quick_start_button = ttk.Button(
-            form, text=t("btn_quick_start"), style="Secondary.TButton", command=self._quick_login
-        )
+        self.quick_start_button = CyberButton(form, text=t("btn_quick_start"), variant="secondary", command=self._quick_login)
         self.quick_start_button.pack(fill=tk.X, pady=(0, 14))
 
         tk.Frame(form, bg=COLORS["border"], height=1).pack(fill=tk.X, pady=(2, 12))
         tk.Label(form, text=t("no_account"), font=(FONT, 9), bg=COLORS["surface"], fg=COLORS["subtle"]).pack(
             pady=(0, 7)
         )
-        self.register_nav_button = ttk.Button(
-            form, text=t("to_register"), style="Secondary.TButton", command=self._show_register
-        )
+        self.register_nav_button = CyberButton(form, text=t("to_register"), variant="secondary", command=self._show_register)
         self.register_nav_button.pack(fill=tk.X)
 
         self._user.focus_set()
@@ -155,10 +154,10 @@ class AuthFrame(tk.Frame):
         self._reg_pwd = self._field(form, t("pwd_hint"), show="*")
         self._reg_cfm = self._field(form, t("confirm_pwd"), show="*")
 
-        ttk.Button(form, text=t("btn_register"), style="Primary.TButton", command=self._do_register).pack(
+        CyberButton(form, text=t("btn_register"), command=self._do_register).pack(
             fill=tk.X, pady=(0, 12)
         )
-        ttk.Button(form, text=t("to_login"), style="Ghost.TButton", command=self._show_login).pack(fill=tk.X)
+        CyberButton(form, text=t("to_login"), variant="secondary", command=self._show_login).pack(fill=tk.X)
 
         self._reg_user.focus_set()
         self._reg_user.bind("<Return>", lambda _event: self._reg_pwd.focus_set())

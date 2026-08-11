@@ -3,14 +3,25 @@ from __future__ import annotations
 
 import os
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import messagebox
 
 from auth import AuthFrame
-from database import init_db
+from database import get_or_create_local_user, get_rankings_local, init_db
 from game import DIFFICULTY_CONFIG, GameFrame, board_density
 from lang import t
 from ranking import RankingFrame
-from ui_theme import COLORS, FONT, FONT_MONO, configure_ttk, load_photo, make_panel, metric_label, set_window_geometry
+from ui_theme import (
+    COLORS,
+    FONT,
+    FONT_MONO,
+    CyberButton,
+    configure_ttk,
+    install_backdrop,
+    load_photo,
+    make_panel,
+    metric_label,
+    set_window_geometry,
+)
 
 
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -20,6 +31,13 @@ _BOMB_ICON = os.path.join(_BASE_DIR, "bomb32.png")
 
 def threat_key(difficulty: str) -> str:
     return {"9x9": "threat_low", "27x27": "threat_medium", "81x81": "threat_high"}[difficulty]
+
+
+def format_duration(seconds: int | None) -> str:
+    if seconds is None:
+        return t("no_record_short")
+    minutes, remain = divmod(int(seconds), 60)
+    return f"{minutes:02d}:{remain:02d}"
 
 
 class MainApp:
@@ -38,7 +56,8 @@ class MainApp:
         self.root.protocol("WM_DELETE_WINDOW", self._quit)
         self.root.bind("<Escape>", lambda _event: self._handle_escape())
         init_db()
-        self._show_auth()
+        self.current_user = get_or_create_local_user()
+        self._show_menu()
         if start_loop:
             self.root.mainloop()
 
@@ -65,6 +84,7 @@ class MainApp:
 
         frame = tk.Frame(self.root, bg=COLORS["bg"])
         frame.pack(fill=tk.BOTH, expand=True)
+        install_backdrop(frame)
         self.current_frame = frame
 
         header_outer, header = make_panel(frame, bg=COLORS["surface"], border=COLORS["border_hot"])
@@ -101,7 +121,7 @@ class MainApp:
         metric_label(operator, t("operator_label"), self.current_user["username"], accent=COLORS["primary"]).pack(
             side=tk.LEFT, padx=(0, 20)
         )
-        ttk.Button(header, text=t("btn_logout"), style="Ghost.TButton", command=self._logout).pack(
+        CyberButton(header, text=t("btn_account"), variant="secondary", command=self._show_auth).pack(
             side=tk.RIGHT, anchor="n", padx=(0, 8), pady=16
         )
 
@@ -120,16 +140,21 @@ class MainApp:
 
         footer = tk.Frame(frame, bg=COLORS["bg"])
         footer.pack(fill=tk.X, padx=32, pady=(0, 24))
-        ttk.Button(footer, text=t("btn_ranking"), style="Secondary.TButton", command=self._show_ranking).pack(
+        CyberButton(footer, text=t("btn_ranking"), variant="secondary", command=self._show_ranking).pack(
             side=tk.LEFT
         )
+        status_outer, status_inner = make_panel(footer, bg=COLORS["surface"], border=COLORS["border"])
+        status_outer.pack(side=tk.RIGHT, fill=tk.X, expand=True, padx=(18, 0))
+        metric_label(status_inner, t("system_ready"), "ONLINE", accent=COLORS["success"]).pack(
+            side=tk.LEFT, padx=14, pady=8
+        )
         tk.Label(
-            footer,
-            text=t("mode_hint"),
-            font=(FONT, 9),
-            bg=COLORS["bg"],
-            fg=COLORS["subtle"],
-        ).pack(side=tk.RIGHT)
+            status_inner,
+            text=f"{t('mode_hint')}  //  {t('quick_controls')}",
+            font=(FONT_MONO, 9),
+            bg=COLORS["surface"],
+            fg=COLORS["muted"],
+        ).pack(side=tk.RIGHT, padx=14, pady=8)
 
     def _difficulty_card(
         self, parent, column: int, key: str, code: str, label: str, description: str, accent: str
@@ -154,11 +179,22 @@ class MainApp:
         )
         tk.Label(
             content,
-            text=f"{t('threat_label')}: {t(threat_key(key))}  /  {cfg['mines']} mines",
+            text=f"{t('threat_label')}: {t(threat_key(key))}  /  {t('mine_count_label')}: {cfg['mines']}",
             font=(FONT_MONO, 10, "bold"),
             bg=COLORS["surface"],
             fg=accent,
         ).pack(anchor="w", pady=(2, 8))
+
+        run_count, best_seconds = self._personal_stats(key)
+        record_bar = tk.Frame(content, bg=COLORS["surface"])
+        record_bar.pack(fill=tk.X, pady=(8, 10))
+        metric_label(record_bar, t("best_label"), format_duration(best_seconds), accent=accent).pack(
+            side=tk.LEFT, expand=True, fill=tk.X
+        )
+        metric_label(record_bar, t("ops_label"), str(run_count).zfill(2), accent=COLORS["text"]).pack(
+            side=tk.LEFT, expand=True, fill=tk.X
+        )
+
         tk.Label(
             content,
             text=description,
@@ -168,21 +204,32 @@ class MainApp:
             bg=COLORS["surface"],
             fg=COLORS["muted"],
         ).pack(anchor="w")
-        ttk.Button(
+        CyberButton(
             content,
             text=t("btn_start"),
-            style="Primary.TButton",
             command=lambda selected=key: self._start_game(selected),
         ).pack(fill=tk.X, pady=(24, 0))
 
+    def _personal_stats(self, difficulty: str) -> tuple[int, int | None]:
+        records = [
+            record
+            for record in get_rankings_local(difficulty, 1000)
+            if record.get("user_id") == self.current_user.get("id")
+            or record.get("username") == self.current_user.get("username")
+        ]
+        if not records:
+            return 0, None
+        best = min(int(record.get("time_seconds", 0)) for record in records)
+        return len(records), best
+
     def _start_game(self, difficulty: str) -> None:
-        self._swap(GameFrame, self.current_user, difficulty, self._show_menu)
+        self._swap(GameFrame, self.current_user, difficulty, self._show_menu, self._show_ranking)
 
     def _show_ranking(self) -> None:
         self._swap(RankingFrame, self.current_user, self._show_menu)
 
     def _logout(self) -> None:
-        if messagebox.askyesno(t("btn_logout"), t("logout_confirm"), parent=self.root):
+        if messagebox.askyesno(t("btn_account"), t("logout_confirm"), parent=self.root):
             self.current_user = None
             self._show_auth()
 

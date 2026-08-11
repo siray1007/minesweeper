@@ -8,10 +8,11 @@ class LanguageThemeTests(unittest.TestCase):
     def test_core_language_keys_exist(self):
         required = {
             "title", "login", "register", "menu_title", "rank_title",
-            "btn_start", "btn_restart", "btn_ranking", "btn_logout", "btn_quick_start",
+            "btn_start", "btn_restart", "btn_ranking", "btn_logout", "btn_quick_start", "btn_account",
             "status_local_loaded", "status_cloud_done", "control_hint",
-            "auth_kicker", "auth_status", "menu_subtitle", "mine_density",
-            "board_status_ready", "rank_empty_marker",
+            "auth_kicker", "auth_status", "menu_subtitle", "mine_density", "mine_count_label", "quick_controls",
+            "board_status_ready", "rank_empty_marker", "clearance_label", "flags_label",
+            "best_label", "ops_label", "btn_lobby", "btn_result_records", "result_summary",
         }
         for lang, mapping in TEXTS.items():
             self.assertTrue(required.issubset(mapping), lang)
