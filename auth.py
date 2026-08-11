@@ -7,7 +7,7 @@ from tkinter import messagebox, ttk
 
 from database import login_user, register_user
 from lang import LANG_OPTIONS, get_lang, save_lang, t
-from ui_theme import COLORS, FONT, configure_ttk, load_photo, make_entry
+from ui_theme import COLORS, FONT, FONT_MONO, configure_ttk, load_photo, make_entry, make_panel
 
 
 _ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bomb32.png")
@@ -70,27 +70,35 @@ class AuthFrame(tk.Frame):
         menu_button.configure(menu=menu)
 
     def _create_card(self, height: int) -> tuple[tk.Frame, tk.Frame]:
-        card = tk.Frame(self, bg=COLORS["border"], bd=0, highlightthickness=0)
-        inner = tk.Frame(card, bg=COLORS["surface"])
-        inner.pack(fill=tk.BOTH, expand=True, padx=1, pady=1)
+        card, inner = make_panel(self, bg=COLORS["surface"], border=COLORS["border_hot"])
         card.place(relx=0.5, rely=0.53, anchor="center", width=440, height=height)
         self._auth_card = card
         return card, inner
 
     def _header(self, parent: tk.Misc, subtitle: str) -> None:
+        tk.Label(
+            parent,
+            text=t("auth_kicker"),
+            font=(FONT_MONO, 9, "bold"),
+            bg=COLORS["surface"],
+            fg=COLORS["primary"],
+        ).pack(pady=(20, 6))
         image = load_photo(_ICON, master=self)
         if image is not None:
             self._icon_image = image
-            tk.Label(parent, image=image, bg=COLORS["surface"]).pack(pady=(24, 6))
+            tk.Label(parent, image=image, bg=COLORS["surface"]).pack(pady=(0, 6))
         else:
             tk.Label(parent, text="MINE", font=(FONT, 13, "bold"), bg=COLORS["surface"], fg=COLORS["primary"]).pack(
-                pady=(24, 6)
+                pady=(0, 6)
             )
 
         tk.Label(parent, text=t("title"), font=(FONT, 27, "bold"), bg=COLORS["surface"], fg=COLORS["text"]).pack()
         tk.Frame(parent, bg=COLORS["primary"], height=2).pack(fill=tk.X, padx=92, pady=(10, 10))
         tk.Label(parent, text=subtitle, font=(FONT, 12), bg=COLORS["surface"], fg=COLORS["muted"]).pack(
-            pady=(0, 20)
+            pady=(0, 8)
+        )
+        tk.Label(parent, text=t("auth_status"), font=(FONT_MONO, 8), bg=COLORS["surface"], fg=COLORS["subtle"]).pack(
+            pady=(0, 18)
         )
 
     def _field(self, parent: tk.Misc, label: str, *, show: str = "") -> tk.Entry:

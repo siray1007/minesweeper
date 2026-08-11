@@ -1,10 +1,14 @@
 import random
 import unittest
 
-from game import MinesweeperGame
+from game import DIFFICULTY_CONFIG, MinesweeperGame, board_density
 
 
 class MinesweeperGameTests(unittest.TestCase):
+    def test_board_density_uses_mine_ratio(self):
+        self.assertEqual(board_density(DIFFICULTY_CONFIG["9x9"]), "12.3%")
+        self.assertEqual(board_density(DIFFICULTY_CONFIG["27x27"]), "13.7%")
+
     def test_rejects_unknown_difficulty(self):
         with self.assertRaises(ValueError):
             MinesweeperGame("custom")

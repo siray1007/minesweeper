@@ -9,7 +9,7 @@ from tkinter import messagebox, ttk
 
 from database import _gitee_append_ranking, save_ranking
 from lang import t
-from ui_theme import COLORS, FONT, configure_ttk, load_photo, set_window_geometry
+from ui_theme import COLORS, FONT, FONT_MONO, configure_ttk, load_photo, make_panel, set_window_geometry
 
 
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -31,6 +31,11 @@ DIFFICULTY_CONFIG = {
     "27x27": {"rows": 27, "cols": 27, "mines": 100, "cell": 20, "title": "进阶 27x27"},
     "81x81": {"rows": 81, "cols": 81, "mines": 800, "cell": 14, "title": "极限 81x81"},
 }
+
+
+def board_density(config: dict) -> str:
+    cells = max(1, int(config["rows"]) * int(config["cols"]))
+    return f"{int(config['mines']) / cells * 100:.1f}%"
 
 
 class MinesweeperGame:
@@ -182,8 +187,9 @@ class GameFrame(tk.Frame):
         root.title(f"{t('title')} · {self.cfg['title']} · {self.user['username']}")
 
     def _build_ui(self) -> None:
-        bar = tk.Frame(self, bg=COLORS["surface"], height=68)
-        bar.pack(fill=tk.X, padx=12, pady=(12, 0))
+        bar_outer, bar = make_panel(self, bg=COLORS["surface"], border=COLORS["border_hot"])
+        bar_outer.pack(fill=tk.X, padx=12, pady=(12, 0))
+        bar.configure(height=72)
         bar.pack_propagate(False)
 
         ttk.Button(bar, text=t("btn_back"), style="Ghost.TButton", command=self._back).pack(
@@ -196,11 +202,11 @@ class GameFrame(tk.Frame):
 
         mine_box = tk.Frame(bar, bg=COLORS["surface"])
         mine_box.pack(side=tk.LEFT, pady=8)
-        tk.Label(mine_box, text=t("mines"), font=(FONT, 8), bg=COLORS["surface"], fg=COLORS["subtle"]).pack(
+        tk.Label(mine_box, text=t("mines"), font=(FONT_MONO, 8), bg=COLORS["surface"], fg=COLORS["subtle"]).pack(
             anchor="w"
         )
         self.mine_label = tk.Label(
-            mine_box, font=("Consolas", 15, "bold"), bg=COLORS["surface"], fg=COLORS["text"]
+            mine_box, font=(FONT_MONO, 15, "bold"), bg=COLORS["surface"], fg=COLORS["text"]
         )
         self.mine_label.pack(anchor="w")
 
@@ -212,14 +218,35 @@ class GameFrame(tk.Frame):
         tk.Label(
             title_stack, text=t("control_hint"), font=(FONT, 8), bg=COLORS["surface"], fg=COLORS["muted"]
         ).pack(anchor="w", pady=(4, 0))
+        self.status_label = tk.Label(
+            title_stack,
+            text=self._status_text(),
+            font=(FONT_MONO, 8, "bold"),
+            bg=COLORS["surface"],
+            fg=COLORS["primary"],
+        )
+        self.status_label.pack(anchor="w", pady=(4, 0))
+
+        density_box = tk.Frame(bar, bg=COLORS["surface"])
+        density_box.pack(side=tk.RIGHT, padx=12, pady=8)
+        tk.Label(
+            density_box, text=t("mine_density"), font=(FONT_MONO, 8), bg=COLORS["surface"], fg=COLORS["subtle"]
+        ).pack(anchor="e")
+        tk.Label(
+            density_box,
+            text=board_density(self.cfg),
+            font=(FONT_MONO, 15, "bold"),
+            bg=COLORS["surface"],
+            fg=COLORS["warning"],
+        ).pack(anchor="e")
 
         timer_box = tk.Frame(bar, bg=COLORS["surface"])
         timer_box.pack(side=tk.RIGHT, padx=14, pady=8)
-        tk.Label(timer_box, text=t("time_label"), font=(FONT, 8), bg=COLORS["surface"], fg=COLORS["subtle"]).pack(
+        tk.Label(timer_box, text=t("time_label"), font=(FONT_MONO, 8), bg=COLORS["surface"], fg=COLORS["subtle"]).pack(
             anchor="e"
         )
         self.timer_label = tk.Label(
-            timer_box, text="00:00", font=("Consolas", 15, "bold"), bg=COLORS["surface"], fg=COLORS["text"]
+            timer_box, text="00:00", font=(FONT_MONO, 15, "bold"), bg=COLORS["surface"], fg=COLORS["text"]
         )
         self.timer_label.pack(anchor="e")
 
@@ -251,31 +278,34 @@ class GameFrame(tk.Frame):
     def _build_small_board(self) -> None:
         width = self.cfg["cols"] * self.cell_size
         height = self.cfg["rows"] * self.cell_size
+        outer, inner = make_panel(self, bg=self._board_bg, border=COLORS["border"])
+        outer.pack(padx=20, pady=20, expand=True)
         self.canvas = tk.Canvas(
-            self,
+            inner,
             width=width,
             height=height,
             bg=self._board_bg,
             highlightthickness=0,
             cursor="crosshair",
         )
-        self.canvas.pack(padx=20, pady=20, expand=True)
+        self.canvas.pack(padx=2, pady=2)
         self._bind_canvas(self.canvas)
         self._draw_small()
 
     def _tile_colors(self, row: int, col: int) -> tuple[str, str]:
         if (row + col) % 2:
-            return COLORS["surface_alt"], COLORS["border"]
-        return COLORS["surface"], COLORS["border"]
+            return COLORS["tile_even"], COLORS["border_dim"]
+        return COLORS["tile_odd"], COLORS["border_dim"]
 
     def _draw_cell(self, canvas, row: int, col: int, size: int, *, small: bool) -> None:
         x1, y1 = col * size, row * size
         x2, y2 = x1 + size, y1 + size
         center_x, center_y = x1 + size // 2, y1 + size // 2
         if self.game.revealed[row][col]:
-            canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["surface_alt"], outline=COLORS["border"])
+            canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["tile_open"], outline=COLORS["border_dim"])
             value = self.game.board[row][col]
             if value == -1:
+                canvas.create_rectangle(x1 + 3, y1 + 3, x2 - 3, y2 - 3, fill=COLORS["danger_dim"], outline="")
                 canvas.create_text(center_x, center_y, text="✹", font=("Arial", max(8, size // 2)), fill=COLORS["danger"])
             elif value > 0:
                 canvas.create_text(
@@ -286,11 +316,15 @@ class GameFrame(tk.Frame):
                     fill=NUM_COLORS.get(value, COLORS["text"]),
                 )
         elif self.game.flagged[row][col]:
-            canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["surface_hover"], outline=COLORS["border"])
+            canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["tile_flag"], outline=COLORS["border"])
+            canvas.create_line(x1 + 4, y1 + 4, x2 - 4, y1 + 4, fill=COLORS["danger"], width=2)
             canvas.create_text(center_x, center_y, text="⚑", font=("Arial", max(8, size // 2)), fill=COLORS["danger"])
         else:
             fill, outline = self._tile_colors(row, col)
             canvas.create_rectangle(x1, y1, x2, y2, fill=fill, outline=outline)
+            if small and size >= 28:
+                canvas.create_line(x1 + 3, y1 + 3, x2 - 4, y1 + 3, fill=COLORS["surface_hover"])
+                canvas.create_line(x1 + 3, y1 + 3, x1 + 3, y2 - 4, fill=COLORS["surface_hover"])
 
     def _draw_small(self) -> None:
         self.canvas.delete("all")
@@ -300,13 +334,17 @@ class GameFrame(tk.Frame):
                 self._draw_cell(self.canvas, row, col, size, small=True)
 
     def _build_large_board(self) -> None:
-        outer = tk.Frame(self, bg=COLORS["surface"])
+        outer, inner = make_panel(self, bg=COLORS["surface"], border=COLORS["border"])
         outer.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
-        outer.grid_rowconfigure(0, weight=1)
-        outer.grid_columnconfigure(0, weight=1)
-        self.scroll_canvas = tk.Canvas(outer, width=780, height=560, bg=self._board_bg, highlightthickness=0)
-        self.h_bar = ttk.Scrollbar(outer, orient=tk.HORIZONTAL, command=self.scroll_canvas.xview)
-        self.v_bar = ttk.Scrollbar(outer, orient=tk.VERTICAL, command=self.scroll_canvas.yview)
+        inner.grid_rowconfigure(0, weight=1)
+        inner.grid_columnconfigure(0, weight=1)
+        self.scroll_canvas = tk.Canvas(inner, width=780, height=560, bg=self._board_bg, highlightthickness=0)
+        self.h_bar = ttk.Scrollbar(
+            inner, orient=tk.HORIZONTAL, command=self.scroll_canvas.xview, style="Cyber.Horizontal.TScrollbar"
+        )
+        self.v_bar = ttk.Scrollbar(
+            inner, orient=tk.VERTICAL, command=self.scroll_canvas.yview, style="Cyber.Vertical.TScrollbar"
+        )
         self.scroll_canvas.configure(xscrollcommand=self.h_bar.set, yscrollcommand=self.v_bar.set)
         self.scroll_canvas.grid(row=0, column=0, sticky="nsew")
         self.h_bar.grid(row=1, column=0, sticky="ew")
@@ -343,9 +381,10 @@ class GameFrame(tk.Frame):
                 x2, y2 = x1 + size - 2, y1 + size - 2
                 center_x, center_y = x1 + max(size - 2, 0) // 2, y1 + max(size - 2, 0) // 2
                 if self.game.revealed[row][col]:
-                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["surface_alt"], outline="")
+                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["tile_open"], outline="")
                     value = self.game.board[row][col]
                     if value == -1 and size >= 10:
+                        self.canvas.create_rectangle(x1 + 1, y1 + 1, x2 - 1, y2 - 1, fill=COLORS["danger_dim"], outline="")
                         self.canvas.create_text(center_x, center_y, text="✹", font=("Arial", max(8, size // 2)), fill=COLORS["danger"])
                     elif value > 0 and size >= 10:
                         self.canvas.create_text(
@@ -356,7 +395,7 @@ class GameFrame(tk.Frame):
                             fill=NUM_COLORS.get(value, COLORS["text"]),
                         )
                 elif self.game.flagged[row][col]:
-                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["surface_hover"], outline="")
+                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["tile_flag"], outline="")
                     if size >= 12:
                         self.canvas.create_text(center_x, center_y, text="⚑", font=("Arial", max(8, size // 2)), fill=COLORS["danger"])
                 else:
@@ -395,6 +434,7 @@ class GameFrame(tk.Frame):
     def _handle_result(self, result: str) -> None:
         self._redraw()
         self._update_mine_label()
+        self._update_status()
         if result == "game_over":
             self._stop_timer()
             self._reveal_all_mines()
@@ -440,6 +480,7 @@ class GameFrame(tk.Frame):
         self.timer_running = True
         self.timer_seconds = 0
         self.timer_label.configure(text="00:00")
+        self._update_status()
         self._after_id = self.after(1000, self._tick)
 
     def _tick(self):
@@ -455,9 +496,28 @@ class GameFrame(tk.Frame):
         if self._after_id:
             self.after_cancel(self._after_id)
             self._after_id = None
+        self._update_status()
 
     def _update_mine_label(self):
         self.mine_label.configure(text=f"{self.game.remaining_mines:02d}")
+
+    def _status_text(self) -> str:
+        if self.game.game_won:
+            return f"{t('sector_label')}: {t('board_status_clear')}"
+        if self.game.game_over:
+            return f"{t('sector_label')}: {t('board_status_failed')}"
+        if self.timer_running:
+            return f"{t('sector_label')}: {t('board_status_live')}"
+        return f"{t('sector_label')}: {t('board_status_ready')}"
+
+    def _update_status(self) -> None:
+        if hasattr(self, "status_label") and self.status_label.winfo_exists():
+            color = COLORS["primary"]
+            if self.game.game_over:
+                color = COLORS["danger"]
+            elif self.game.game_won:
+                color = COLORS["success"]
+            self.status_label.configure(text=self._status_text(), fg=color)
 
     def _reveal_all_mines(self):
         for row in range(self.game.rows):
@@ -491,3 +551,4 @@ class GameFrame(tk.Frame):
         self.game = MinesweeperGame(self.difficulty)
         self._redraw()
         self._update_mine_label()
+        self._update_status()
