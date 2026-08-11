@@ -14,8 +14,8 @@ from ui_theme import COLORS, FONT, configure_ttk, load_photo, set_window_geometr
 
 
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-_ICON_PATH = os.path.join(_BASE_DIR, '扫雷图标.png')
-_BOMB_ICON = os.path.join(_BASE_DIR, 'bomb32.png')
+_ICON_PATH = os.path.join(_BASE_DIR, "扫雷图标.png")
+_BOMB_ICON = os.path.join(_BASE_DIR, "bomb32.png")
 
 
 class MainApp:
@@ -28,11 +28,11 @@ class MainApp:
         if self._icon is not None:
             self.root.iconphoto(True, self._icon)
 
-        self.root.title(t('title'))
-        set_window_geometry(self.root, 560, 680, 460, 560)
+        self.root.title(t("title"))
+        set_window_geometry(self.root, 620, 720, 520, 600)
         self.root.resizable(True, True)
-        self.root.protocol('WM_DELETE_WINDOW', self._quit)
-        self.root.bind('<Escape>', lambda _event: self._handle_escape())
+        self.root.protocol("WM_DELETE_WINDOW", self._quit)
+        self.root.bind("<Escape>", lambda _event: self._handle_escape())
         init_db()
         self._show_auth()
         if start_loop:
@@ -45,8 +45,8 @@ class MainApp:
         self.current_frame.pack(fill=tk.BOTH, expand=True)
 
     def _show_auth(self) -> None:
-        self.root.title(t('title'))
-        set_window_geometry(self.root, 560, 680, 460, 600)
+        self.root.title(t("title"))
+        set_window_geometry(self.root, 620, 720, 520, 600)
         self._swap(AuthFrame, self._on_login)
 
     def _on_login(self, user: dict) -> None:
@@ -54,87 +54,102 @@ class MainApp:
         self._show_menu()
 
     def _show_menu(self) -> None:
-        self.root.title(t('menu_title'))
-        set_window_geometry(self.root, 820, 680, 680, 580)
+        self.root.title(t("menu_title"))
+        set_window_geometry(self.root, 1080, 720, 920, 620)
         if self.current_frame is not None:
             self.current_frame.destroy()
 
-        frame = tk.Frame(self.root, bg=COLORS['bg'])
+        frame = tk.Frame(self.root, bg=COLORS["bg"])
         frame.pack(fill=tk.BOTH, expand=True)
         self.current_frame = frame
 
-        header = tk.Frame(frame, bg=COLORS['bg'])
-        header.pack(fill=tk.X, padx=42, pady=(28, 8))
+        header = tk.Frame(frame, bg=COLORS["bg"])
+        header.pack(fill=tk.X, padx=32, pady=(24, 12))
         image = load_photo(_BOMB_ICON, master=self.root)
         if image is not None:
             self._menu_icon = image
-            tk.Label(header, image=image, bg=COLORS['bg']).pack(side=tk.LEFT, padx=(0, 14))
-        title_block = tk.Frame(header, bg=COLORS['bg'])
-        title_block.pack(side=tk.LEFT, anchor='w')
+            tk.Label(header, image=image, bg=COLORS["bg"]).pack(side=tk.LEFT, padx=(0, 14))
+        title_block = tk.Frame(header, bg=COLORS["bg"])
+        title_block.pack(side=tk.LEFT, anchor="w")
         tk.Label(
-            title_block, text=t('menu_title'), font=(FONT, 25, 'bold'),
-            bg=COLORS['bg'], fg=COLORS['text'],
-        ).pack(anchor='w')
+            title_block,
+            text=t("menu_title"),
+            font=(FONT, 24, "bold"),
+            bg=COLORS["bg"],
+            fg=COLORS["text"],
+        ).pack(anchor="w")
         tk.Label(
-            title_block, text=t('welcome', self.current_user['username']),
-            font=(FONT, 10), bg=COLORS['bg'], fg=COLORS['muted'],
-        ).pack(anchor='w', pady=(4, 0))
-        ttk.Button(
-            header, text=t('btn_logout'), style='Ghost.TButton',
-            command=self._logout,
-        ).pack(side=tk.RIGHT, anchor='n')
+            title_block,
+            text=t("welcome", self.current_user["username"]),
+            font=(FONT, 10),
+            bg=COLORS["bg"],
+            fg=COLORS["muted"],
+        ).pack(anchor="w", pady=(4, 0))
+        ttk.Button(header, text=t("btn_logout"), style="Ghost.TButton", command=self._logout).pack(
+            side=tk.RIGHT, anchor="n"
+        )
 
-        body = tk.Frame(frame, bg=COLORS['bg'])
-        body.pack(fill=tk.BOTH, expand=True, padx=42, pady=(20, 30))
-        body.grid_columnconfigure((0, 1, 2), weight=1, uniform='difficulty')
+        body = tk.Frame(frame, bg=COLORS["bg"])
+        body.pack(fill=tk.BOTH, expand=True, padx=32, pady=(18, 24))
+        body.grid_columnconfigure((0, 1, 2), weight=1, uniform="difficulty")
         body.grid_rowconfigure(0, weight=1)
 
         difficulties = [
-            ('9x9', t('diff_easy'), t('desc_easy'), COLORS['success']),
-            ('27x27', t('diff_medium'), t('desc_medium'), COLORS['warning']),
-            ('81x81', t('diff_hard'), t('desc_hard'), COLORS['danger']),
+            ("9x9", t("diff_easy"), t("desc_easy"), COLORS["success"]),
+            ("27x27", t("diff_medium"), t("desc_medium"), COLORS["warning"]),
+            ("81x81", t("diff_hard"), t("desc_hard"), COLORS["danger"]),
         ]
         for column, (key, label, description, accent) in enumerate(difficulties):
             self._difficulty_card(body, column, key, label, description, accent)
 
-        footer = tk.Frame(frame, bg=COLORS['bg'])
-        footer.pack(fill=tk.X, padx=42, pady=(0, 28))
-        ttk.Button(
-            footer, text=t('btn_ranking'), style='Secondary.TButton',
-            command=self._show_ranking,
-        ).pack(side=tk.LEFT)
+        footer = tk.Frame(frame, bg=COLORS["bg"])
+        footer.pack(fill=tk.X, padx=32, pady=(0, 24))
+        ttk.Button(footer, text=t("btn_ranking"), style="Secondary.TButton", command=self._show_ranking).pack(
+            side=tk.LEFT
+        )
         tk.Label(
-            footer, text='选择一个难度开始挑战', font=(FONT, 9),
-            bg=COLORS['bg'], fg=COLORS['subtle'],
+            footer,
+            text=t("mode_hint"),
+            font=(FONT, 9),
+            bg=COLORS["bg"],
+            fg=COLORS["subtle"],
         ).pack(side=tk.RIGHT)
 
-    def _difficulty_card(self, parent, column: int, key: str, label: str,
-                         description: str, accent: str) -> None:
+    def _difficulty_card(self, parent, column: int, key: str, label: str, description: str, accent: str) -> None:
         card = tk.Frame(
-            parent, bg=COLORS['surface'],
-            highlightbackground=COLORS['border'], highlightthickness=1,
+            parent,
+            bg=COLORS["surface"],
+            highlightbackground=COLORS["border"],
+            highlightthickness=1,
         )
-        card.grid(row=0, column=column, sticky='nsew', padx=(0 if column == 0 else 8, 8 if column < 2 else 0))
-        tk.Frame(card, bg=accent, height=5).pack(fill=tk.X)
-        content = tk.Frame(card, bg=COLORS['surface'])
-        content.pack(fill=tk.BOTH, expand=True, padx=22, pady=26)
-        tk.Label(
-            content, text=label, font=(FONT, 16, 'bold'),
-            bg=COLORS['surface'], fg=accent,
-        ).pack(anchor='w')
+        card.grid(row=0, column=column, sticky="nsew", padx=(0 if column == 0 else 8, 8 if column < 2 else 0))
+        tk.Frame(card, bg=accent, height=4).pack(fill=tk.X)
+        content = tk.Frame(card, bg=COLORS["surface"])
+        content.pack(fill=tk.BOTH, expand=True, padx=20, pady=22)
+        tk.Label(content, text=label, font=(FONT, 16, "bold"), bg=COLORS["surface"], fg=accent).pack(anchor="w")
         cfg = DIFFICULTY_CONFIG[key]
         tk.Label(
-            content, text=f"{cfg['rows']} × {cfg['cols']}   ·   {cfg['mines']} mines",
-            font=(FONT, 10, 'bold'), bg=COLORS['surface'], fg=COLORS['text'],
-        ).pack(anchor='w', pady=(12, 4))
+            content,
+            text=f"{cfg['rows']} x {cfg['cols']}   |   {cfg['mines']} mines",
+            font=(FONT, 10, "bold"),
+            bg=COLORS["surface"],
+            fg=COLORS["text"],
+        ).pack(anchor="w", pady=(10, 4))
         tk.Label(
-            content, text=description, wraplength=180, justify='left',
-            font=(FONT, 9), bg=COLORS['surface'], fg=COLORS['muted'],
-        ).pack(anchor='w')
+            content,
+            text=description,
+            wraplength=210,
+            justify="left",
+            font=(FONT, 9),
+            bg=COLORS["surface"],
+            fg=COLORS["muted"],
+        ).pack(anchor="w")
         ttk.Button(
-            content, text=t('btn_start'), style='Primary.TButton',
+            content,
+            text=t("btn_start"),
+            style="Primary.TButton",
             command=lambda selected=key: self._start_game(selected),
-        ).pack(fill=tk.X, pady=(28, 0))
+        ).pack(fill=tk.X, pady=(24, 0))
 
     def _start_game(self, difficulty: str) -> None:
         self._swap(GameFrame, self.current_user, difficulty, self._show_menu)
@@ -143,7 +158,7 @@ class MainApp:
         self._swap(RankingFrame, self.current_user, self._show_menu)
 
     def _logout(self) -> None:
-        if messagebox.askyesno(t('btn_logout'), t('logout_confirm'), parent=self.root):
+        if messagebox.askyesno(t("btn_logout"), t("logout_confirm"), parent=self.root):
             self.current_user = None
             self._show_auth()
 
@@ -152,11 +167,10 @@ class MainApp:
             self._show_menu()
 
     def _quit(self) -> None:
-        if self.current_user and not messagebox.askyesno(
-            t('title'), t('quit_confirm'), parent=self.root):
+        if self.current_user and not messagebox.askyesno(t("title"), t("quit_confirm"), parent=self.root):
             return
         self.root.destroy()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     MainApp()

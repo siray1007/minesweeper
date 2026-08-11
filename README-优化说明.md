@@ -1,57 +1,30 @@
-# 扫雷游戏优化说明
+# 赛博扫雷重构说明
 
-## 优化版本 v2.1
+## 重构重点
+- 重建语言资源，清理乱码文案
+- 统一深色赛博风主题 token
+- 重做登录、大厅、对局和排行榜界面
+- 保留原有扫雷规则与本地存档能力
+- 清理数据库模块注释和云端同步降级逻辑
 
-### 新增功能
-
-#### 1. 用户注册登录系统
-- 首次使用需注册账号（用户名+密码）
-- 支持登录/注册/切换账号
-- 用户数据独立存储
-
-#### 2. 排行榜系统
-- 按难度分类排名（初级/中级/高级）
-- 排名依据：完成用时（升序）
-- 显示排名、用户名、用时、日期
-- 仅记录获胜成绩
-
-#### 3. 多语言支持
-- 中文/English 双语切换
-- 登录界面、游戏界面、排行榜全面覆盖
-- 语言偏好自动保存
-
-#### 4. 主题换肤
-- 经典绿（默认）
-- 暗夜黑
-- 海洋蓝
-- 樱花粉
-- 日落橙
-- 森林绿
-- 紫色梦幻
-- 共 7 种配色方案
-
-### 技术优化
-- 数据库迁移至 SQLite，支持用户系统
-- 重构代码结构，模块化设计
-- 优化游戏逻辑，修复已知 bug
-- 改进 UI 布局和交互体验
-
-### 文件结构
-```
-minesweeper/
-├── main.py          # 主入口
-├── game.py          # 游戏核心逻辑
-├── auth.py          # 用户认证
-├── database.py      # 数据库操作
-├── ranking.py       # 排行榜
-├── lang.py          # 多语言
-├── ui_theme.py      # 主题系统
-├── run.bat          # 一键启动
-├── minesweeper.db   # SQLite 数据库（不提交）
-└── 扫雷.exe         # 打包程序（不提交）
+## 文件结构
+```text
+main.py       应用壳和页面切换
+auth.py       登录与注册界面
+game.py       扫雷规则与对局界面
+ranking.py    排行榜界面
+database.py   SQLite 与 Gitee 排行榜同步
+lang.py       语言资源
+ui_theme.py   主题 token 与 Tk 样式
 ```
 
-### 运行方式
-1. 双击 `run.bat` 一键启动
-2. 或执行 `python main.py`
-3. 打包：`pyinstaller --onefile --windowed --icon=扫雷图标.ico main.py`
+## 验证
+```bash
+python -m unittest discover -v
+python -c "import main, auth, game, ranking, lang, ui_theme, database"
+```
+
+## 打包提示
+```bash
+pyinstaller --onefile --windowed --icon=扫雷图标.ico main.py
+```
