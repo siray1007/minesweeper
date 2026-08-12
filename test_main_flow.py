@@ -2,7 +2,6 @@ import os
 import tempfile
 import tkinter as tk
 import unittest
-from unittest.mock import patch
 
 from auth import AuthFrame
 import database
@@ -88,6 +87,8 @@ class MainFlowTests(unittest.TestCase):
             self.assertEqual(texts.count(t("profile_label")), 1)
             self.assertEqual(texts.count(t("btn_ranking")), 1)
             self.assertEqual(texts.count(app.current_user["username"]), 1)
+            self.assertIn(t("cloud_local_records").upper(), texts)
+            self.assertIn("siray1007/minesweeper", texts)
         finally:
             app.root.destroy()
 
@@ -107,8 +108,7 @@ class MainFlowTests(unittest.TestCase):
         app = self._logged_in_app()
         try:
             app._show_profile()
-            with patch("main.messagebox.askyesno", return_value=True):
-                app._logout()
+            app._logout()
             app.root.update()
 
             self.assertIsNone(app.current_user)

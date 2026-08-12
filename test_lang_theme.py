@@ -18,7 +18,10 @@ class LanguageThemeTests(unittest.TestCase):
             "profile_switch_account", "match_win", "match_fail",
             "status_cloud_failed", "cloud_panel_title", "cloud_provider", "cloud_repository",
             "cloud_access", "cloud_link", "cloud_checking", "cloud_connected",
-            "cloud_offline", "cloud_read_only", "cloud_read_write",
+            "cloud_offline", "cloud_read_only", "cloud_read_write", "auth_ready",
+            "lobby_controls", "cloud_local_records", "cloud_probe_now",
+            "cloud_read_only_detail", "cloud_read_write_detail", "cloud_offline_detail",
+            "result_retry_tip",
         }
         for lang, mapping in TEXTS.items():
             self.assertTrue(required.issubset(mapping), lang)
@@ -34,7 +37,7 @@ class LanguageThemeTests(unittest.TestCase):
             "bg", "bg_grid", "surface", "surface_alt", "surface_metal", "border",
             "border_hot", "border_dim", "text", "muted", "primary", "danger",
             "tile_even", "tile_odd", "tile_open", "tile_flag",
-            "tile_border", "tile_open_border",
+            "tile_border", "tile_open_border", "tile_open_alt", "tile_flag_hot",
         ):
             self.assertIn(key, COLORS)
 

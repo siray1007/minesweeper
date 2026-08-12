@@ -207,7 +207,7 @@ class GameFrame(tk.Frame):
         self.zoom = 1.0
         self._auto_fit_pending = difficulty == "81x81"
         self.hover_cell: tuple[int, int] | None = None
-        self._result_dialog: tk.Toplevel | None = None
+        self._result_panel: tk.Frame | None = None
         self._board_bg = COLORS["input"]
         self._build_ui()
         self._bind_shortcuts()
@@ -313,6 +313,7 @@ class GameFrame(tk.Frame):
             self._build_small_board()
 
         bottom = tk.Frame(self, bg=COLORS["bg"])
+        self._bottom_bar = bottom
         bottom.pack(fill=tk.X, padx=20, pady=(0, 14))
         CyberButton(bottom, text=t("btn_restart"), variant="secondary", command=self.restart).pack(
             side=tk.LEFT, padx=5
@@ -355,15 +356,27 @@ class GameFrame(tk.Frame):
             return COLORS["tile_even"], COLORS["tile_border"]
         return COLORS["tile_odd"], COLORS["tile_border"]
 
+    def _draw_unrevealed_tile(self, canvas, x1: float, y1: float, x2: float, y2: float, fill: str, outline: str) -> None:
+        canvas.create_rectangle(x1, y1, x2, y2, fill=fill, outline=COLORS["tile_edge_shadow"], width=1)
+        canvas.create_rectangle(x1 + 1, y1 + 1, x2 - 1, y2 - 1, outline=outline, width=1)
+        canvas.create_line(x1 + 2, y1 + 2, x2 - 3, y1 + 2, fill=COLORS["tile_edge_light"], width=1)
+        canvas.create_line(x1 + 2, y1 + 2, x1 + 2, y2 - 3, fill=COLORS["surface_hover"], width=1)
+
+    def _draw_revealed_tile(self, canvas, x1: float, y1: float, x2: float, y2: float, row: int, col: int) -> None:
+        fill = COLORS["tile_open_alt"] if (row + col) % 2 else COLORS["tile_open"]
+        canvas.create_rectangle(x1, y1, x2, y2, fill=fill, outline=COLORS["tile_open_border"], width=1)
+        canvas.create_line(x1, y1, x2, y1, fill=COLORS["tile_edge_shadow"], width=1)
+        canvas.create_line(x1, y1, x1, y2, fill=COLORS["tile_edge_shadow"], width=1)
+
     def _draw_cell(self, canvas, row: int, col: int, size: int, *, small: bool) -> None:
         x1, y1 = col * size, row * size
         x2, y2 = x1 + size, y1 + size
         center_x, center_y = x1 + size // 2, y1 + size // 2
         if self.game.revealed[row][col]:
-            canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["tile_open"], outline=COLORS["tile_open_border"])
+            self._draw_revealed_tile(canvas, x1, y1, x2, y2, row, col)
             value = self.game.board[row][col]
             if value == -1:
-                canvas.create_rectangle(x1 + 3, y1 + 3, x2 - 3, y2 - 3, fill=COLORS["danger_dim"], outline="")
+                canvas.create_rectangle(x1 + 4, y1 + 4, x2 - 4, y2 - 4, fill=COLORS["danger_dim"], outline=COLORS["danger"])
                 canvas.create_text(
                     center_x,
                     center_y,
@@ -380,8 +393,8 @@ class GameFrame(tk.Frame):
                     fill=NUM_COLORS.get(value, COLORS["text"]),
                 )
         elif self.game.flagged[row][col]:
-            canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["tile_flag"], outline=COLORS["danger"])
-            canvas.create_line(x1 + 4, y1 + 4, x2 - 4, y1 + 4, fill=COLORS["danger"], width=2)
+            canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["tile_flag"], outline=COLORS["danger"], width=2)
+            canvas.create_line(x1 + 5, y1 + 5, x2 - 5, y1 + 5, fill=COLORS["tile_flag_hot"], width=2)
             canvas.create_text(
                 center_x,
                 center_y,
@@ -391,10 +404,7 @@ class GameFrame(tk.Frame):
             )
         else:
             fill, outline = self._tile_colors(row, col)
-            canvas.create_rectangle(x1, y1, x2, y2, fill=fill, outline=outline)
-            if small and size >= 28:
-                canvas.create_line(x1 + 3, y1 + 3, x2 - 4, y1 + 3, fill=COLORS["surface_hover"])
-                canvas.create_line(x1 + 3, y1 + 3, x1 + 3, y2 - 4, fill=COLORS["surface_hover"])
+            self._draw_unrevealed_tile(canvas, x1, y1, x2, y2, fill, outline)
         if small and self.hover_cell == (row, col) and not self.game.revealed[row][col]:
             canvas.create_rectangle(x1 + 2, y1 + 2, x2 - 2, y2 - 2, outline=COLORS["border_hot"], width=2)
 
@@ -454,9 +464,7 @@ class GameFrame(tk.Frame):
                 x2, y2 = (col + 1) * size, (row + 1) * size
                 center_x, center_y = x1 + max(size - 2, 0) // 2, y1 + max(size - 2, 0) // 2
                 if self.game.revealed[row][col]:
-                    self.canvas.create_rectangle(
-                        x1, y1, x2, y2, fill=COLORS["tile_open"], outline=COLORS["tile_open_border"]
-                    )
+                    self._draw_revealed_tile(self.canvas, x1, y1, x2, y2, row, col)
                     value = self.game.board[row][col]
                     if value == -1 and size >= 10:
                         self.canvas.create_rectangle(
@@ -478,7 +486,13 @@ class GameFrame(tk.Frame):
                             fill=NUM_COLORS.get(value, COLORS["text"]),
                         )
                 elif self.game.flagged[row][col]:
-                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["tile_flag"], outline=COLORS["danger"])
+                    self.canvas.create_rectangle(
+                        x1, y1, x2, y2, fill=COLORS["tile_flag"], outline=COLORS["danger"], width=1
+                    )
+                    if size >= 8:
+                        self.canvas.create_line(
+                            x1 + 2, y1 + 2, x2 - 2, y1 + 2, fill=COLORS["tile_flag_hot"], width=1
+                        )
                     if size >= 12:
                         self.canvas.create_text(
                             center_x,
@@ -489,7 +503,13 @@ class GameFrame(tk.Frame):
                         )
                 else:
                     fill, outline = self._tile_colors(row, col)
-                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=fill, outline=outline)
+                    self.canvas.create_rectangle(
+                        x1, y1, x2, y2, fill=fill, outline=COLORS["tile_edge_shadow"], width=1
+                    )
+                    if size >= 8:
+                        self.canvas.create_rectangle(x1 + 1, y1 + 1, x2 - 1, y2 - 1, outline=outline, width=1)
+                    if size >= 14:
+                        self.canvas.create_line(x1 + 2, y1 + 2, x2 - 3, y1 + 2, fill=COLORS["tile_edge_light"], width=1)
         width, height = self.game.cols * size, self.game.rows * size
         canvas_width, canvas_height = int(round(width)), int(round(height))
         self.canvas.configure(width=canvas_width, height=canvas_height)
@@ -667,10 +687,10 @@ class GameFrame(tk.Frame):
         self._redraw()
 
     def _close_result_dialog(self) -> None:
-        dialog = self._result_dialog
-        if dialog is not None and dialog.winfo_exists():
-            dialog.destroy()
-        self._result_dialog = None
+        panel = self._result_panel
+        if panel is not None and panel.winfo_exists():
+            panel.destroy()
+        self._result_panel = None
 
     def _show_result_panel(self, result: str) -> None:
         if not self.winfo_exists():
@@ -681,38 +701,42 @@ class GameFrame(tk.Frame):
         accent = COLORS["success"] if is_win else COLORS["danger"]
         minutes, seconds = divmod(self.timer_seconds, 60)
 
-        dialog = tk.Toplevel(self)
-        self._result_dialog = dialog
-        dialog.title(title)
-        dialog.configure(bg=COLORS["bg"])
-        dialog.resizable(False, False)
-        dialog.transient(self.winfo_toplevel())
-        dialog.protocol("WM_DELETE_WINDOW", self._close_result_dialog)
+        outer, inner = make_panel(self, bg=COLORS["surface"], border=accent)
+        self._result_panel = outer
+        pack_options = {"fill": tk.X, "padx": 20, "pady": (0, 14)}
+        if hasattr(self, "_bottom_bar") and self._bottom_bar.winfo_exists():
+            pack_options["before"] = self._bottom_bar
+        outer.pack(**pack_options)
 
-        outer, inner = make_panel(dialog, bg=COLORS["surface"], border=accent)
-        outer.pack(fill=tk.BOTH, expand=True, padx=14, pady=14)
+        header = tk.Frame(inner, bg=COLORS["surface"])
+        header.pack(fill=tk.X, padx=24, pady=(18, 10))
+        left = tk.Frame(header, bg=COLORS["surface"])
+        left.pack(side=tk.LEFT, fill=tk.X, expand=True)
         tk.Label(
-            inner,
+            left,
             text=t("result_summary"),
             font=(FONT_MONO, 9, "bold"),
             bg=COLORS["surface"],
             fg=accent,
-        ).pack(anchor="w", padx=24, pady=(22, 4))
-        tk.Label(inner, text=title, font=(FONT, 22, "bold"), bg=COLORS["surface"], fg=COLORS["text"]).pack(
-            anchor="w", padx=24
+        ).pack(anchor="w")
+        tk.Label(left, text=title, font=(FONT, 22, "bold"), bg=COLORS["surface"], fg=COLORS["text"]).pack(
+            anchor="w", pady=(4, 0)
         )
         tk.Label(
-            inner,
+            left,
             text=t("result_win_tip") if is_win else t("result_failed_tip"),
             font=(FONT, 10),
             bg=COLORS["surface"],
             fg=COLORS["muted"],
-            wraplength=360,
+            wraplength=620,
             justify="left",
-        ).pack(anchor="w", padx=24, pady=(6, 18))
+        ).pack(anchor="w", pady=(6, 0))
+        CyberButton(header, text=t("btn_close"), variant="secondary", command=self._close_result_dialog).pack(
+            side=tk.RIGHT, padx=(16, 0)
+        )
 
         stats = tk.Frame(inner, bg=COLORS["surface"])
-        stats.pack(fill=tk.X, padx=24, pady=(0, 20))
+        stats.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(24, 10), pady=(0, 20))
         metric_label(stats, t("time_label"), f"{minutes:02d}:{seconds:02d}", accent=accent).pack(
             side=tk.LEFT, expand=True, fill=tk.X
         )
@@ -723,17 +747,28 @@ class GameFrame(tk.Frame):
             side=tk.LEFT, expand=True, fill=tk.X
         )
 
+        side_note = tk.Frame(inner, bg=COLORS["surface"])
+        side_note.pack(side=tk.LEFT, fill=tk.X, padx=(0, 10), pady=(0, 20))
         if is_win:
             tk.Label(
-                inner,
+                side_note,
                 text=t("result_saved"),
                 font=(FONT_MONO, 9, "bold"),
                 bg=COLORS["surface"],
                 fg=COLORS["success"],
-            ).pack(anchor="w", padx=24, pady=(0, 16))
+            ).pack(anchor="w")
+        tk.Label(
+            side_note,
+            text=t("result_retry_tip"),
+            font=(FONT, 9),
+            bg=COLORS["surface"],
+            fg=COLORS["subtle"],
+            wraplength=240,
+            justify="left",
+        ).pack(anchor="w", pady=(4, 0))
 
         buttons = tk.Frame(inner, bg=COLORS["surface"])
-        buttons.pack(fill=tk.X, padx=24, pady=(0, 24))
+        buttons.pack(side=tk.RIGHT, padx=24, pady=(0, 20))
 
         def restart_from_dialog() -> None:
             self._close_result_dialog()
@@ -752,21 +787,15 @@ class GameFrame(tk.Frame):
             else:
                 self.on_back()
 
-        CyberButton(buttons, text=t("btn_restart"), command=restart_from_dialog).pack(side=tk.LEFT, fill=tk.X, expand=True)
+        CyberButton(buttons, text=t("btn_restart"), command=restart_from_dialog, size="large").pack(
+            side=tk.TOP, fill=tk.X, pady=(0, 8)
+        )
         CyberButton(buttons, text=t("btn_lobby"), variant="secondary", command=lobby_from_dialog).pack(
-            side=tk.LEFT, fill=tk.X, expand=True, padx=8
+            side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6)
         )
         CyberButton(buttons, text=t("btn_result_records"), variant="secondary", command=records_from_dialog).pack(
             side=tk.LEFT, fill=tk.X, expand=True
         )
-
-        dialog.update_idletasks()
-        root = self.winfo_toplevel()
-        x = root.winfo_rootx() + max(0, (root.winfo_width() - dialog.winfo_width()) // 2)
-        y = root.winfo_rooty() + max(0, (root.winfo_height() - dialog.winfo_height()) // 2)
-        dialog.geometry(f"+{x}+{y}")
-        dialog.grab_set()
-        dialog.focus_set()
 
     def _on_win(self):
         save_ranking(self.user["id"], self.difficulty, self.timer_seconds)

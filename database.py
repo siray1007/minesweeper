@@ -137,18 +137,26 @@ def register_user(username: str, password: str) -> tuple:
 
 
 def login_user(username: str, password: str) -> tuple:
+    username = username.strip()
     conn = get_db()
     c = conn.cursor()
     pwd_hash = hash_password(password)
     c.execute(
         "SELECT id, username FROM users WHERE username = ? AND password_hash = ?",
-        (username.strip(), pwd_hash),
+        (username, pwd_hash),
     )
     user = c.fetchone()
+    if not user:
+        c.execute("SELECT id FROM users WHERE username = ?", (username,))
+        username_exists = c.fetchone() is not None
+    else:
+        username_exists = True
     conn.close()
     if user:
         return True, dict(user)
-    return False, t("login_fail")
+    if username_exists:
+        return False, t("login_password_wrong")
+    return False, t("login_user_missing")
 
 
 def save_ranking(user_id: int, difficulty: str, time_seconds: int, username: str = ""):

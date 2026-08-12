@@ -8,7 +8,7 @@ from tkinter import ttk
 
 COLORS = {
     "bg": "#070b14",
-    "bg_grid": "#0b1728",
+    "bg_grid": "#0d2038",
     "surface": "#0d1320",
     "surface_alt": "#111a2c",
     "surface_metal": "#172033",
@@ -16,8 +16,8 @@ COLORS = {
     "border": "#22314a",
     "border_hot": "#2ce6ff",
     "border_dim": "#263c5c",
-    "tile_border": "#304a70",
-    "tile_open_border": "#476487",
+    "tile_border": "#42648e",
+    "tile_open_border": "#314f73",
     "text": "#edf3ff",
     "muted": "#8a97b2",
     "subtle": "#5d687f",
@@ -31,23 +31,27 @@ COLORS = {
     "danger_dim": "#391320",
     "accent": "#9b6dff",
     "input": "#050812",
-    "tile_even": "#1d3150",
-    "tile_odd": "#172842",
-    "tile_open": "#0b1424",
-    "tile_flag": "#401d35",
+    "tile_even": "#243c62",
+    "tile_odd": "#13243e",
+    "tile_open": "#09111d",
+    "tile_open_alt": "#0c1929",
+    "tile_flag": "#4c1837",
+    "tile_flag_hot": "#ff7b9a",
+    "tile_edge_light": "#5e82b4",
+    "tile_edge_shadow": "#07101d",
 }
 
 FONT = "Microsoft YaHei UI"
 FONT_MONO = "Consolas"
 
 LAYOUT = {
-    "auth": (720, 820, 560, 680),
-    "lobby": (1360, 860, 1120, 720),
-    "game_easy": (980, 840, 760, 700),
-    "game_medium": (1180, 880, 920, 740),
-    "game_hard": (1440, 920, 1040, 760),
-    "ranking": (1280, 820, 1040, 700),
-    "profile": (1160, 860, 1020, 760),
+    "auth": (780, 860, 600, 720),
+    "lobby": (1580, 940, 1280, 760),
+    "game_easy": (1080, 880, 820, 720),
+    "game_medium": (1360, 940, 1040, 780),
+    "game_hard": (1640, 980, 1160, 800),
+    "ranking": (1400, 880, 1120, 740),
+    "profile": (1280, 900, 1080, 780),
 }
 
 
@@ -73,7 +77,7 @@ class CyberButton(tk.Button):
         else:
             bg, fg, active_bg = COLORS["surface_metal"], COLORS["text"], COLORS["surface_hover"]
             border = COLORS["border_hot"]
-        font_size, padx, pady = (11, 24, 14) if size == "large" else (10, 16, 9)
+        font_size, padx, pady = (12, 30, 18) if size == "large" else (10, 18, 11)
         super().__init__(
             parent,
             text=text,
