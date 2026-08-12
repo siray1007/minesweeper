@@ -15,7 +15,9 @@ COLORS = {
     "surface_hover": "#162238",
     "border": "#22314a",
     "border_hot": "#2ce6ff",
-    "border_dim": "#172237",
+    "border_dim": "#263c5c",
+    "tile_border": "#304a70",
+    "tile_open_border": "#476487",
     "text": "#edf3ff",
     "muted": "#8a97b2",
     "subtle": "#5d687f",
@@ -29,10 +31,10 @@ COLORS = {
     "danger_dim": "#391320",
     "accent": "#9b6dff",
     "input": "#050812",
-    "tile_even": "#121b2d",
-    "tile_odd": "#0f1727",
-    "tile_open": "#1b2638",
-    "tile_flag": "#241a2a",
+    "tile_even": "#1d3150",
+    "tile_odd": "#172842",
+    "tile_open": "#0b1424",
+    "tile_flag": "#401d35",
 }
 
 FONT = "Microsoft YaHei UI"
@@ -45,7 +47,7 @@ LAYOUT = {
     "game_medium": (1180, 880, 920, 740),
     "game_hard": (1440, 920, 1040, 760),
     "ranking": (1280, 820, 1040, 700),
-    "profile": (1120, 820, 980, 720),
+    "profile": (1160, 860, 1020, 760),
 }
 
 
@@ -60,6 +62,7 @@ class CyberButton(tk.Button):
         *,
         variant: str = "primary",
         width: int = 0,
+        size: str = "normal",
     ):
         if variant == "primary":
             bg, fg, active_bg = COLORS["primary"], "#08101b", COLORS["primary_hover"]
@@ -70,11 +73,12 @@ class CyberButton(tk.Button):
         else:
             bg, fg, active_bg = COLORS["surface_metal"], COLORS["text"], COLORS["surface_hover"]
             border = COLORS["border_hot"]
+        font_size, padx, pady = (11, 24, 14) if size == "large" else (10, 16, 9)
         super().__init__(
             parent,
             text=text,
             command=command,
-            font=(FONT, 10, "bold"),
+            font=(FONT, font_size, "bold"),
             bg=bg,
             fg=fg,
             activebackground=active_bg,
@@ -84,8 +88,8 @@ class CyberButton(tk.Button):
             highlightthickness=1,
             highlightbackground=border,
             highlightcolor=border,
-            padx=16,
-            pady=9,
+            padx=padx,
+            pady=pady,
             cursor="hand2",
             width=width,
         )

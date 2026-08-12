@@ -1,4 +1,4 @@
-"""Local SQLite storage and optional Gitee leaderboard sync."""
+"""Local SQLite storage and optional GitHub leaderboard sync."""
 from __future__ import annotations
 
 import base64
@@ -21,11 +21,12 @@ _DATA_DIR = os.path.join(_DATA_ROOT, "CyberMinesweeper")
 _DEFAULT_DB_PATH = os.path.join(_DATA_DIR, "minesweeper.db")
 DB_PATH = _DEFAULT_DB_PATH
 
-GITEE_USER = "siray-07"
-GITEE_REPO = "minesweeper"
-GITEE_API = f"https://gitee.com/api/v5/repos/{GITEE_USER}/{GITEE_REPO}/contents/rankings.json"
-GITEE_RAW = f"https://gitee.com/{GITEE_USER}/{GITEE_REPO}/raw/master/rankings.json"
-GITEE_TOKEN = os.getenv("MINESWEEPER_GITEE_TOKEN", "")
+GITHUB_USER = "siray1007"
+GITHUB_REPO = "minesweeper"
+GITHUB_BRANCH = "main"
+GITHUB_API = f"https://api.github.com/repos/{GITHUB_USER}/{GITHUB_REPO}/contents/rankings.json"
+GITHUB_RAW = f"https://raw.githubusercontent.com/{GITHUB_USER}/{GITHUB_REPO}/{GITHUB_BRANCH}/rankings.json"
+GITHUB_TOKEN = os.getenv("MINESWEEPER_GITHUB_TOKEN", "")
 MAX_RANKINGS = 100
 
 
@@ -160,7 +161,7 @@ def save_ranking(user_id: int, difficulty: str, time_seconds: int, username: str
     conn.commit()
     conn.close()
     if username:
-        _gitee_append_ranking(username, difficulty, time_seconds)
+        _github_append_ranking(username, difficulty, time_seconds)
 
 
 def save_match_result(user_id: int, difficulty: str, result: str, time_seconds: int | None = None) -> None:
@@ -271,7 +272,7 @@ def _seed_match_history(conn) -> None:
 
 
 def get_rankings(difficulty: str, limit: int = 50) -> list:
-    online = _gitee_fetch_rankings(difficulty, limit) or []
+    online = fetch_cloud_rankings(difficulty, limit) or []
     local = get_rankings_local(difficulty, limit)
     seen = set()
     merged = []
@@ -288,24 +289,44 @@ def get_rankings(difficulty: str, limit: int = 50) -> list:
     return merged[:limit]
 
 
-def _gitee_fetch_rankings(difficulty: str, limit: int) -> list | None:
+def fetch_cloud_rankings(difficulty: str, limit: int) -> list | None:
     try:
-        req = urllib.request.Request(GITEE_RAW)
+        req = urllib.request.Request(
+            GITHUB_RAW,
+            headers={"Accept": "application/vnd.github.raw+json", "User-Agent": "CyberMinesweeper"},
+        )
         with urllib.request.urlopen(req, timeout=8) as resp:
             all_rankings = json.loads(resp.read().decode())
-    except Exception:
+    except (OSError, ValueError, json.JSONDecodeError):
         return None
     filtered = [r for r in all_rankings if r.get("difficulty") == difficulty]
     filtered.sort(key=lambda x: x.get("time_seconds", 99999))
     return filtered[:limit]
 
 
-def _gitee_append_ranking(username: str, difficulty: str, time_seconds: int):
-    if not GITEE_TOKEN:
+def cloud_connection_status() -> dict:
+    """Return the real GitHub leaderboard connection and access mode."""
+    rankings = fetch_cloud_rankings("9x9", MAX_RANKINGS)
+    return {
+        "connected": rankings is not None,
+        "writable": bool(GITHUB_TOKEN),
+        "provider": "GITHUB",
+        "repository": f"{GITHUB_USER}/{GITHUB_REPO}",
+    }
+
+
+def _github_append_ranking(username: str, difficulty: str, time_seconds: int):
+    if not GITHUB_TOKEN:
         return
     try:
-        get_url = f"{GITEE_API}?access_token={GITEE_TOKEN}"
-        req = urllib.request.Request(get_url)
+        headers = {
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {GITHUB_TOKEN}",
+            "User-Agent": "CyberMinesweeper",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
+        get_url = f"{GITHUB_API}?ref={GITHUB_BRANCH}"
+        req = urllib.request.Request(get_url, headers=headers)
         with urllib.request.urlopen(req, timeout=10) as resp:
             info = json.loads(resp.read().decode())
         sha = info["sha"]
@@ -334,16 +355,19 @@ def _gitee_append_ranking(username: str, difficulty: str, time_seconds: int):
     new_content = json.dumps(trimmed, ensure_ascii=False, indent=2)
     body = json.dumps(
         {
-            "access_token": GITEE_TOKEN,
+            "message": f"records: update {username} {difficulty} {time_seconds}s",
             "content": base64.b64encode(new_content.encode()).decode(),
             "sha": sha,
-            "message": f"更新战绩：{username} {difficulty} {time_seconds}s",
+            "branch": GITHUB_BRANCH,
         }
     ).encode()
     try:
         put_req = urllib.request.Request(
-            GITEE_API, data=body, method="PUT", headers={"Content-Type": "application/json"}
+            GITHUB_API,
+            data=body,
+            method="PUT",
+            headers={**headers, "Content-Type": "application/json"},
         )
         urllib.request.urlopen(put_req, timeout=10)
-    except Exception:
+    except OSError:
         pass

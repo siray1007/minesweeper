@@ -1,10 +1,12 @@
 """Local and cloud leaderboard screen."""
 from __future__ import annotations
 
+import queue
+import threading
 import tkinter as tk
 from tkinter import ttk
 
-from database import _gitee_fetch_rankings, get_rankings_local
+from database import fetch_cloud_rankings, get_rankings_local
 from lang import t
 from ui_theme import COLORS, FONT, FONT_MONO, LAYOUT, CyberButton, configure_ttk, install_backdrop, make_panel, section_title
 
@@ -24,12 +26,13 @@ class RankingFrame(tk.Frame):
         self.current_user = current_user
         self.on_back = on_back
         self._trees: dict[str, ttk.Treeview] = {}
-        self._cloud_idx = 0
+        self._cloud_queue: queue.Queue[tuple[str, list[dict] | None] | None] = queue.Queue()
+        self._cloud_failed = False
         root = self.winfo_toplevel()
         root.geometry(f"{LAYOUT['ranking'][0]}x{LAYOUT['ranking'][1]}")
         root.minsize(LAYOUT["ranking"][2], LAYOUT["ranking"][3])
         self._build_ui()
-        self._cloud_job = self.after(250, self._fetch_cloud_step)
+        self._start_cloud_fetch()
 
     def _build_ui(self) -> None:
         bar_outer, bar = make_panel(self, bg=COLORS["surface"], border=COLORS["border_hot"])
@@ -209,24 +212,38 @@ class RankingFrame(tk.Frame):
             minutes, seconds = divmod(total_seconds, 60)
             table.insert("", tk.END, values=(label, f"{minutes:02d}:{seconds:02d}", date))
 
-    def _fetch_cloud_step(self) -> None:
-        labels = self._difficulty_labels()
-        if self._cloud_idx >= len(labels):
-            self.status_label.configure(text=t("status_cloud_done"))
-            return
-        difficulty = labels[self._cloud_idx][0]
-        self._cloud_idx += 1
-
+    def _start_cloud_fetch(self) -> None:
         def fetch() -> None:
-            online = _gitee_fetch_rankings(difficulty, 50) or []
-            local = get_rankings_local(difficulty)
-            merged = self._dedup_best(online + local)
-            table = self._trees.get(difficulty)
-            if table is not None and table.winfo_exists():
-                self._populate_tree(table, merged)
+            for difficulty, _label in self._difficulty_labels():
+                self._cloud_queue.put((difficulty, fetch_cloud_rankings(difficulty, 50)))
+            self._cloud_queue.put(None)
 
-        self.after(50, fetch)
-        self._cloud_job = self.after(350, self._fetch_cloud_step)
+        threading.Thread(target=fetch, daemon=True).start()
+        self._cloud_job = self.after(100, self._poll_cloud_fetch)
+
+    def _poll_cloud_fetch(self) -> None:
+        try:
+            item = self._cloud_queue.get_nowait()
+        except queue.Empty:
+            self._cloud_job = self.after(100, self._poll_cloud_fetch)
+            return
+        if item is None:
+            self.status_label.configure(
+                text=t("status_cloud_failed") if self._cloud_failed else t("status_cloud_done"),
+                fg=COLORS["danger"] if self._cloud_failed else COLORS["success"],
+            )
+            self._cloud_job = None
+            return
+
+        difficulty, online = item
+        if online is None:
+            self._cloud_failed = True
+            online = []
+        local = get_rankings_local(difficulty)
+        table = self._trees.get(difficulty)
+        if table is not None and table.winfo_exists():
+            self._populate_tree(table, self._dedup_best(online + local))
+        self._cloud_job = self.after(20, self._poll_cloud_fetch)
 
     def _back(self) -> None:
         self._cancel_cloud_job()

@@ -71,7 +71,7 @@ _ZH = {
     "time_label": "计时",
     "status_local_loaded": "本地战绩已加载 / 云端同步中",
     "status_cloud_done": "本地战绩已加载 / 云端同步完成",
-    "mode_hint": "选择一个作战模式开始清扫",
+    "status_cloud_failed": "本地战绩已加载 / GitHub 连接失败",
     "control_hint": "左键翻开 / 右键标记 / 双击数字快速展开",
     "zoom_fit": "重置缩放",
     "profile_label": "玩家档案",
@@ -88,7 +88,6 @@ _ZH = {
     "records_label": "战绩同步",
     "auth_kicker": "NEON_SWEEP / ACCESS NODE",
     "auth_status": "本地档案在线 / 离线排行可用",
-    "system_ready": "系统待命",
     "quick_controls": "R 重开 / Esc 返回 / 右键标记",
     "best_label": "BEST",
     "ops_label": "RUNS",
@@ -103,12 +102,16 @@ _ZH = {
     "menu_subtitle": "选择作战模块，进入雷区扫描。",
     "lobby_profile_title": "COMBAT ID",
     "lobby_profile_subtitle": "当前身份和个人战绩摘要",
-    "lobby_status_title": "SYSTEM STACK",
-    "lobby_status_scan": "雷区扫描控制台保持在线。",
-    "lobby_status_record": "个人战绩与排行榜同步已启用。",
-    "lobby_status_control": "按键与窗口状态保持在可操作范围内。",
-    "lobby_threat_matrix": "THREAT MATRIX",
-    "operator_label": "OPERATOR",
+    "cloud_panel_title": "CLOUD LINK",
+    "cloud_provider": "数据源",
+    "cloud_repository": "仓库",
+    "cloud_access": "访问模式",
+    "cloud_link": "连接状态",
+    "cloud_checking": "检测中",
+    "cloud_connected": "已连接",
+    "cloud_offline": "连接失败",
+    "cloud_read_only": "云端只读",
+    "cloud_read_write": "云端读写",
     "grid_label": "GRID",
     "mine_density": "DENSITY",
     "mine_count_label": "MINES",
@@ -188,7 +191,7 @@ _EN = {
     "time_label": "Time",
     "status_local_loaded": "Local records loaded / cloud sync running",
     "status_cloud_done": "Local records loaded / cloud sync complete",
-    "mode_hint": "Select an operation mode to begin.",
+    "status_cloud_failed": "Local records loaded / GitHub unavailable",
     "control_hint": "Left reveal / Right flag / Double-click number to expand",
     "zoom_fit": "Reset zoom",
     "profile_label": "Profile",
@@ -205,7 +208,6 @@ _EN = {
     "records_label": "Record Sync",
     "auth_kicker": "NEON_SWEEP / ACCESS NODE",
     "auth_status": "Local profile online / offline records enabled",
-    "system_ready": "System Ready",
     "quick_controls": "R restart / Esc back / Right-click flag",
     "best_label": "BEST",
     "ops_label": "RUNS",
@@ -220,12 +222,16 @@ _EN = {
     "menu_subtitle": "Choose an operation module and enter the minefield.",
     "lobby_profile_title": "COMBAT ID",
     "lobby_profile_subtitle": "Current identity and personal record snapshot.",
-    "lobby_status_title": "SYSTEM STACK",
-    "lobby_status_scan": "Minefield scan console stays online.",
-    "lobby_status_record": "Personal records and leaderboard sync are enabled.",
-    "lobby_status_control": "Controls and window state stay within reach.",
-    "lobby_threat_matrix": "THREAT MATRIX",
-    "operator_label": "OPERATOR",
+    "cloud_panel_title": "CLOUD LINK",
+    "cloud_provider": "Provider",
+    "cloud_repository": "Repository",
+    "cloud_access": "Access",
+    "cloud_link": "Connection",
+    "cloud_checking": "CHECKING",
+    "cloud_connected": "CONNECTED",
+    "cloud_offline": "OFFLINE",
+    "cloud_read_only": "READ ONLY",
+    "cloud_read_write": "READ / WRITE",
     "grid_label": "GRID",
     "mine_density": "DENSITY",
     "mine_count_label": "MINES",
@@ -242,31 +248,28 @@ _EN = {
     "rank_empty_marker": "NO SIGNAL",
 }
 
-TEXTS = {
-    "zh": _ZH,
-    "en": _EN,
-    "zt": {**_ZH, "title": "賽博掃雷", "language": "語言"},
-    "de": _EN,
-    "fr": _EN,
-    "ru": _EN,
-    "ja": _EN,
-    "ko": _EN,
-    "wy": _ZH,
-}
+TEXTS = {"zh": _ZH, "en": _EN}
 
 LANG_OPTIONS = [
     ("zh", "中文"),
-    ("en", "English"),
-    ("zt", "繁體中文"),
-    ("de", "Deutsch"),
-    ("fr", "Français"),
-    ("ru", "Русский"),
-    ("ja", "日本語"),
-    ("ko", "한국어"),
-    ("wy", "文言"),
+    ("en", "EN"),
 ]
 
 _current_lang = "zh"
+
+_LEGACY_LANG_MAP = {
+    "zt": "zh",
+    "wy": "zh",
+    "de": "en",
+    "fr": "en",
+    "ru": "en",
+    "ja": "en",
+    "ko": "en",
+}
+
+
+def _normalize_lang(lang: str) -> str:
+    return lang if lang in TEXTS else _LEGACY_LANG_MAP.get(lang, "zh")
 
 
 def load_lang() -> None:
@@ -275,16 +278,14 @@ def load_lang() -> None:
         if os.path.exists(_LANG_FILE):
             with open(_LANG_FILE, "r", encoding="utf-8") as lang_file:
                 lang = lang_file.read().strip()
-            if lang in TEXTS:
-                _current_lang = lang
+            _current_lang = _normalize_lang(lang)
     except OSError:
         _current_lang = "zh"
 
 
 def save_lang(lang: str) -> None:
     global _current_lang
-    if lang not in TEXTS:
-        lang = "zh"
+    lang = _normalize_lang(lang)
     _current_lang = lang
     os.makedirs(_DATA_DIR, exist_ok=True)
     with open(_LANG_FILE, "w", encoding="utf-8") as lang_file:

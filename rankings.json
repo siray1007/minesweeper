@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "username": "sal",
+    "difficulty": "9x9",
+    "time_seconds": 11,
+    "created_at": "2026-07-17 17:33:25"
+  },
+  {
+    "username": "ssr",
+    "difficulty": "9x9",
+    "time_seconds": 12,
+    "created_at": "2026-07-17 23:05:36"
+  },
+  {
+    "username": "sal",
+    "difficulty": "27x27",
+    "time_seconds": 209,
+    "created_at": "2026-07-17 23:40:56"
+  },
+  {
+    "username": "ssr",
+    "difficulty": "27x27",
+    "time_seconds": 266,
+    "created_at": "2026-07-18 19:20:22"
+  }
+]

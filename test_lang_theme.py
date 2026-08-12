@@ -16,6 +16,9 @@ class LanguageThemeTests(unittest.TestCase):
             "profile_subtitle", "profile_total_matches", "profile_wins", "profile_losses",
             "profile_win_rate", "profile_recent_title", "profile_no_recent",
             "profile_switch_account", "match_win", "match_fail",
+            "status_cloud_failed", "cloud_panel_title", "cloud_provider", "cloud_repository",
+            "cloud_access", "cloud_link", "cloud_checking", "cloud_connected",
+            "cloud_offline", "cloud_read_only", "cloud_read_write",
         }
         for lang, mapping in TEXTS.items():
             self.assertTrue(required.issubset(mapping), lang)
@@ -23,12 +26,15 @@ class LanguageThemeTests(unittest.TestCase):
     def test_language_options_point_to_existing_tables(self):
         for code, _name in LANG_OPTIONS:
             self.assertIn(code, TEXTS)
+        self.assertEqual([code for code, _name in LANG_OPTIONS], ["zh", "en"])
+        self.assertEqual(set(TEXTS), {"zh", "en"})
 
     def test_theme_has_core_tokens(self):
         for key in (
             "bg", "bg_grid", "surface", "surface_alt", "surface_metal", "border",
             "border_hot", "border_dim", "text", "muted", "primary", "danger",
             "tile_even", "tile_odd", "tile_open", "tile_flag",
+            "tile_border", "tile_open_border",
         ):
             self.assertIn(key, COLORS)
 

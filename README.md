@@ -10,7 +10,8 @@
 - 对局 HUD 显示剩余雷数、计时、雷区密度和清扫进度
 - 右键标记、双击数字展开、`R` 重开、`Esc` 返回大厅
 - 胜负结算使用赛博操作面板，可重开、回大厅或查看战绩
-- 排行榜优先显示本地战绩，并在后台合并云端数据
+- 排行榜优先显示本地战绩，并在后台合并 GitHub 云端数据
+- 大厅显示真实 GitHub 连接状态；未配置令牌时为云端只读模式
 - 支持语言切换，主要界面文案集中在 `lang.py`
 
 ## 正式版
@@ -46,3 +47,15 @@ python -m unittest discover -v
 ```
 
 核心玩法逻辑在 `game.py` 的 `MinesweeperGame` 中，界面主题和通用控件在 `ui_theme.py` 中。
+
+## GitHub 战绩同步
+
+云端榜单读取自 `siray1007/minesweeper` 的 `main/rankings.json`。读取公开榜单不需要令牌。
+
+如需让客户端自动把新纪录写回 GitHub，请设置具有该仓库 Contents 写权限的环境变量：
+
+```text
+MINESWEEPER_GITHUB_TOKEN
+```
+
+未配置令牌时，本地账号和战绩仍会正常保存，界面会明确显示“云端只读”。

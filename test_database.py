@@ -1,6 +1,7 @@
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import database
 
@@ -67,6 +68,22 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual(user["username"], "ssr")
         self.assertEqual(len(database.get_rankings_local("9x9")), 1)
         os.remove(legacy_path)
+
+    @patch("database.fetch_cloud_rankings", return_value=[])
+    def test_cloud_status_reports_github_read_only_without_token(self, _fetch):
+        with patch.object(database, "GITHUB_TOKEN", ""):
+            status = database.cloud_connection_status()
+
+        self.assertTrue(status["connected"])
+        self.assertFalse(status["writable"])
+        self.assertEqual(status["provider"], "GITHUB")
+        self.assertEqual(status["repository"], "siray1007/minesweeper")
+
+    @patch("database.fetch_cloud_rankings", return_value=None)
+    def test_cloud_status_reports_connection_failure(self, _fetch):
+        status = database.cloud_connection_status()
+
+        self.assertFalse(status["connected"])
 
 
 if __name__ == "__main__":
