@@ -7,6 +7,9 @@ on:
     paths:
       - '**.py'
       - 'run.bat'
+      - 'build_release.ps1'
+      - '*.png'
+      - '*.ico'
 
 permissions:
   contents: write
@@ -28,7 +31,8 @@ jobs:
         run: pip install pyinstaller
 
       - name: Build exe
-        run: python -m PyInstaller --onefile --windowed --name "扫雷" --distpath "." main.py
+        shell: powershell
+        run: .\build_release.ps1
 
       - name: Generate tag
         shell: bash
