@@ -100,7 +100,7 @@ class MainApp:
             tk.Label(header, image=image, bg=COLORS["surface"]).pack(side=tk.LEFT, padx=(22, 18), pady=24)
         title_block = tk.Frame(header, bg=COLORS["surface"])
         title_block.pack(side=tk.LEFT, anchor="w", fill=tk.X, expand=True, pady=18)
-        section_title(title_block, "NEON_SWEEP // MINEFIELD OPS", t("menu_title"), t("menu_subtitle")).pack(
+        section_title(title_block, "MINESWEEPER // MINEFIELD OPS", t("menu_title"), t("menu_subtitle")).pack(
             anchor="w", fill=tk.X
         )
         CyberButton(header, text=t("profile_label"), variant="secondary", command=self._show_profile, size="large").pack(
@@ -142,7 +142,7 @@ class MainApp:
         ).pack(side=tk.LEFT, padx=16, pady=12)
         tk.Label(
             footer,
-            text="NEON_SWEEP // COMMAND DECK",
+            text="MINESWEEPER // COMMAND DECK",
             font=(FONT_MONO, 9),
             bg=COLORS["surface"],
             fg=COLORS["subtle"],

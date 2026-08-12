@@ -30,6 +30,13 @@ class LanguageThemeTests(unittest.TestCase):
         self.assertEqual([name for _code, name in LANG_OPTIONS], ["中文", "English"])
         self.assertEqual(set(TEXTS), {"zh", "en"})
 
+    def test_product_name_is_minesweeper_not_style_name(self):
+        self.assertEqual(TEXTS["zh"]["title"], "扫雷")
+        self.assertEqual(TEXTS["en"]["title"], "Minesweeper")
+        self.assertNotIn("赛博", TEXTS["zh"]["title"])
+        self.assertNotIn("Cyber", TEXTS["en"]["title"])
+        self.assertTrue(TEXTS["zh"]["auth_kicker"].startswith("MINESWEEPER"))
+
     def test_theme_has_core_tokens(self):
         for key in (
             "bg", "bg_grid", "surface", "surface_alt", "surface_metal", "border",

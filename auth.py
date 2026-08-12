@@ -58,12 +58,21 @@ class AuthFrame(tk.Frame):
             focused_field.icursor(tk.END)
 
     def _language_selector(self) -> None:
-        container = tk.Frame(self, bg=COLORS["bg"])
-        container.place(x=24, y=22, anchor="nw")
+        module = tk.Frame(self, bg=COLORS["border_hot"], padx=1, pady=1)
+        module.place(x=24, y=22, anchor="nw")
+        self._language_module = module
+        container = tk.Frame(module, bg=COLORS["surface_metal"])
+        container.pack(fill=tk.BOTH, expand=True)
 
-        tk.Label(container, text=t("language"), font=(FONT, 10, "bold"), bg=COLORS["bg"], fg=COLORS["muted"]).pack(
-            side=tk.LEFT, padx=(0, 8)
-        )
+        tk.Label(
+            container,
+            text=t("language"),
+            font=(FONT, 10, "bold"),
+            bg=COLORS["surface_metal"],
+            fg=COLORS["muted"],
+            padx=14,
+        ).pack(side=tk.LEFT, fill=tk.Y)
+        tk.Frame(container, bg=COLORS["border"], width=1).pack(side=tk.LEFT, fill=tk.Y)
 
         names = [name for _code, name in LANG_OPTIONS]
         current_name = dict(LANG_OPTIONS).get(get_lang(), names[0])
@@ -76,7 +85,7 @@ class AuthFrame(tk.Frame):
             style="Language.TCombobox",
             width=14,
         )
-        self._language_combo.pack(side=tk.LEFT, ipady=5)
+        self._language_combo.pack(side=tk.LEFT, fill=tk.Y, ipady=5, padx=(0, 2))
         self._language_combo.bind("<<ComboboxSelected>>", self._language_selected)
 
     def _language_selected(self, _event=None) -> None:

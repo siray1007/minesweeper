@@ -9,7 +9,7 @@ _DATA_DIR = os.path.join(_DATA_ROOT, "CyberMinesweeper")
 _LANG_FILE = os.path.join(_DATA_DIR, "lang_pref.txt")
 
 _ZH = {
-    "title": "赛博扫雷",
+    "title": "扫雷",
     "login": "登录账号",
     "register": "创建账号",
     "username": "用户名",
@@ -88,7 +88,7 @@ _ZH = {
     "match_win": "胜利",
     "match_fail": "失败",
     "records_label": "战绩同步",
-    "auth_kicker": "NEON_SWEEP / ACCESS NODE",
+    "auth_kicker": "MINESWEEPER / ACCESS NODE",
     "auth_status": "本地档案在线 / 离线排行可用",
     "auth_ready": "输入账号后直接进入作战大厅。",
     "quick_controls": "R 重开 / Esc 返回 / 右键标记",
@@ -128,7 +128,7 @@ _ZH = {
 }
 
 _EN = {
-    "title": "Cyber Minesweeper",
+    "title": "Minesweeper",
     "login": "Sign In",
     "register": "Create Account",
     "username": "Username",
@@ -207,7 +207,7 @@ _EN = {
     "match_win": "WIN",
     "match_fail": "FAIL",
     "records_label": "Record Sync",
-    "auth_kicker": "NEON_SWEEP / ACCESS NODE",
+    "auth_kicker": "MINESWEEPER / ACCESS NODE",
     "auth_status": "Local profile online / offline records enabled",
     "auth_ready": "Enter credentials and jump straight into the operations lobby.",
     "quick_controls": "R restart / Esc back / Right-click flag",

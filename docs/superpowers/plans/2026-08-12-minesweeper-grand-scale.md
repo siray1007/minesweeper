@@ -1,8 +1,8 @@
-# Cyber Minesweeper Grand Scale Implementation Plan
+# Minesweeper Grand Scale Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make the Cyber Minesweeper client feel larger, more cinematic, and more like a serious competitive desktop game.
+**Goal:** Make the Minesweeper client feel larger, more cinematic, and more like a serious competitive desktop game.
 
 **Architecture:** Keep Tkinter, SQLite, and the existing app split. Add shared layout-scale helpers first, then apply them to the lobby, game frame, ranking view, and player profile without changing Minesweeper rules.
 

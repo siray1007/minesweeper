@@ -36,6 +36,7 @@ class MainFlowTests(unittest.TestCase):
             app.root.update()
             self.assertIsNone(app.current_user)
             self.assertIsInstance(app.current_frame, AuthFrame)
+            self.assertEqual(app.root.title(), t("title"))
             self.assertGreaterEqual(app.root.winfo_width(), 560)
             self.assertGreaterEqual(app.root.winfo_height(), 680)
         finally:

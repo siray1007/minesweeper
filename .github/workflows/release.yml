@@ -35,8 +35,8 @@ jobs:
         shell: powershell
         run: |
           .\build_release.ps1
-          if (-not (Test-Path -LiteralPath '.\CyberMinesweeper.exe')) {
-            throw 'CyberMinesweeper.exe was not produced.'
+          if (-not (Test-Path -LiteralPath '.\扫雷.exe')) {
+            throw '扫雷.exe was not produced.'
           }
 
       - name: Generate tag
@@ -51,8 +51,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG }}
-          name: "Cyber Minesweeper ${{ env.TAG }}"
+          name: "扫雷 ${{ env.TAG }}"
           generate_release_notes: true
-          files: CyberMinesweeper.exe
+          files: 扫雷.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

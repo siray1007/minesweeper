@@ -1,8 +1,8 @@
-# Cyber Minesweeper Polish Implementation Plan
+# Minesweeper Polish Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans for this tightly coupled visual polish pass. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Push the existing cyberpunk Minesweeper redesign from functional to sharply polished.
+**Goal:** Push the existing Minesweeper redesign from functional to sharply polished, using a cyberpunk visual style.
 
 **Architecture:** Keep Tkinter, SQLite, and the existing view split. Extend shared visual tokens first, then apply them to auth, lobby, ranking, and game rendering without changing game rules.
 

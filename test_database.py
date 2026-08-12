@@ -77,7 +77,7 @@ class DatabaseTests(unittest.TestCase):
         self.assertTrue(status["connected"])
         self.assertFalse(status["writable"])
         self.assertEqual(status["provider"], "GITHUB")
-        self.assertEqual(status["repository"], "siray1007/minesweeper")
+        self.assertNotIn("repository", status)
 
     @patch("database.fetch_cloud_rankings", return_value=None)
     def test_cloud_status_reports_connection_failure(self, _fetch):

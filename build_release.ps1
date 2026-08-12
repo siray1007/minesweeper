@@ -8,7 +8,6 @@ $specDir = Join-Path $buildDir 'spec'
 $appName = [string]([char]0x626B) + [char]0x96F7
 $iconName = $appName + [char]0x56FE + [char]0x6807
 $outputExe = Join-Path $projectDir ($appName + '.exe')
-$stableOutputExe = Join-Path $projectDir 'CyberMinesweeper.exe'
 
 $pyInstallerLocation = (& python -c "import importlib.util, pathlib; spec = importlib.util.find_spec('PyInstaller'); print(pathlib.Path(spec.origin).parent.parent if spec else '')").Trim()
 if (-not $pyInstallerLocation) {
@@ -54,7 +53,5 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Copy-Item -LiteralPath (Join-Path $distDir ($appName + '.exe')) -Destination $outputExe -Force
-Copy-Item -LiteralPath $outputExe -Destination $stableOutputExe -Force
 $item = Get-Item -LiteralPath $outputExe
 Write-Host "Release ready: $($item.FullName) ($($item.Length) bytes)"
-Write-Host "Stable release asset: $stableOutputExe"

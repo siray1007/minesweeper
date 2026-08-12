@@ -5,7 +5,6 @@ minesweeper.db-wal
 
 # 正式发布产物
 扫雷.exe
-CyberMinesweeper.exe
 
 # PyInstaller 构建目录
 build/

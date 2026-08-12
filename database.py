@@ -301,7 +301,7 @@ def fetch_cloud_rankings(difficulty: str, limit: int) -> list | None:
     try:
         req = urllib.request.Request(
             GITHUB_RAW,
-            headers={"Accept": "application/vnd.github.raw+json", "User-Agent": "CyberMinesweeper"},
+            headers={"Accept": "application/vnd.github.raw+json", "User-Agent": "Minesweeper"},
         )
         with urllib.request.urlopen(req, timeout=8) as resp:
             all_rankings = json.loads(resp.read().decode())
@@ -313,13 +313,12 @@ def fetch_cloud_rankings(difficulty: str, limit: int) -> list | None:
 
 
 def cloud_connection_status() -> dict:
-    """Return the real GitHub leaderboard connection and access mode."""
+    """Return the leaderboard connection and access mode without exposing the backing sync target."""
     rankings = fetch_cloud_rankings("9x9", MAX_RANKINGS)
     return {
         "connected": rankings is not None,
         "writable": bool(GITHUB_TOKEN),
         "provider": "GITHUB",
-        "repository": f"{GITHUB_USER}/{GITHUB_REPO}",
     }
 
 
@@ -330,7 +329,7 @@ def _github_append_ranking(username: str, difficulty: str, time_seconds: int):
         headers = {
             "Accept": "application/vnd.github+json",
             "Authorization": f"Bearer {GITHUB_TOKEN}",
-            "User-Agent": "CyberMinesweeper",
+            "User-Agent": "Minesweeper",
             "X-GitHub-Api-Version": "2022-11-28",
         }
         get_url = f"{GITHUB_API}?ref={GITHUB_BRANCH}"

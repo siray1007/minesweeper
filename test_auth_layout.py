@@ -67,10 +67,13 @@ class AuthLayoutTests(unittest.TestCase):
         root.update()
 
         self.assertIsInstance(frame._language_combo, ttk.Combobox)
+        self.assertTrue(frame._language_module.winfo_exists())
         self.assertEqual(str(frame._language_combo.cget("state")), "readonly")
         self.assertEqual(list(frame._language_combo.cget("values")), [name for _code, name in lang.LANG_OPTIONS])
         self.assertLess(frame._language_combo.winfo_rootx() - frame.winfo_rootx(), 220)
         self.assertLess(frame._language_combo.winfo_rooty() - frame.winfo_rooty(), 90)
+        self.assertEqual(frame._language_module.winfo_rootx(), frame.winfo_rootx() + 24)
+        self.assertGreater(frame._language_module.winfo_width(), frame._language_combo.winfo_width())
         root.destroy()
 
     def test_login_failure_stays_inline(self):

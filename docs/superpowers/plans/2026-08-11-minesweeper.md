@@ -1,4 +1,4 @@
-# 赛博扫雷重构 Implementation Plan
+# 扫雷重构 Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -288,8 +288,7 @@ Describe the app as a dark cyber-style desktop Minesweeper client with login, mo
 
 - [ ] **Step 2: Search the tree for leftover mojibake and dead resource paths**
 
-Run:
-`rg -n "鎵浄|馃|鈫|鈼|脳|鏆|鎺掕|闅|鍦伴浄|瀵嗙爜" .`
+Run a mojibake scan across tracked Python and Markdown files.
 
 Expected: only intentional Chinese text remains, no broken encoding artifacts
 

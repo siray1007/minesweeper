@@ -173,6 +173,8 @@ def configure_ttk(root: tk.Misc) -> None:
         bordercolor=COLORS["border_hot"],
         lightcolor=COLORS["border_hot"],
         darkcolor=COLORS["border_hot"],
+        borderwidth=0,
+        relief="flat",
     )
     style.map(
         "Language.TCombobox",
