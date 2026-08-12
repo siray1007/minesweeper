@@ -3,6 +3,7 @@ import tempfile
 import tkinter as tk
 import unittest
 from unittest.mock import patch
+from tkinter import ttk
 
 from auth import AuthFrame
 import lang
@@ -55,6 +56,21 @@ class AuthLayoutTests(unittest.TestCase):
 
         self.assertEqual(frame._user.get(), "ssr")
         self.assertEqual(get_lang(), "en")
+        root.destroy()
+
+    def test_language_selector_is_dropdown_at_top_left(self):
+        root = tk.Tk()
+        root.geometry("780x860")
+        with patch("auth.os.path.exists", return_value=False):
+            frame = AuthFrame(root, lambda user: None)
+        frame.pack(fill=tk.BOTH, expand=True)
+        root.update()
+
+        self.assertIsInstance(frame._language_combo, ttk.Combobox)
+        self.assertEqual(str(frame._language_combo.cget("state")), "readonly")
+        self.assertEqual(list(frame._language_combo.cget("values")), [name for _code, name in lang.LANG_OPTIONS])
+        self.assertLess(frame._language_combo.winfo_rootx() - frame.winfo_rootx(), 220)
+        self.assertLess(frame._language_combo.winfo_rooty() - frame.winfo_rooty(), 90)
         root.destroy()
 
     def test_login_failure_stays_inline(self):

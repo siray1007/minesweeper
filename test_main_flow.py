@@ -67,7 +67,7 @@ class MainFlowTests(unittest.TestCase):
             app._close_profile_dialog()
             app.root.destroy()
 
-    def test_lobby_has_one_profile_and_one_ranking_entry(self):
+    def test_lobby_contains_only_game_content_and_one_ranking_entry(self):
         app = self._logged_in_app()
         try:
             app.root.update()
@@ -87,8 +87,12 @@ class MainFlowTests(unittest.TestCase):
             self.assertEqual(texts.count(t("profile_label")), 1)
             self.assertEqual(texts.count(t("btn_ranking")), 1)
             self.assertEqual(texts.count(app.current_user["username"]), 1)
-            self.assertIn(t("cloud_local_records").upper(), texts)
-            self.assertIn("siray1007/minesweeper", texts)
+            self.assertIn(t("lobby_records_title"), texts)
+            combined = " ".join(str(text) for text in texts).lower()
+            self.assertNotIn("github", combined)
+            self.assertNotIn("siray1007/minesweeper", combined)
+            self.assertNotIn("repository", combined)
+            self.assertNotIn("仓库", combined)
         finally:
             app.root.destroy()
 
