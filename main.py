@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import os
+import queue
+import threading
 import tkinter as tk
 from tkinter import messagebox
 
 from auth import AuthFrame
-from database import get_rankings_local, get_user_profile_summary, init_db
+from database import cloud_connection_status, get_rankings_local, get_user_profile_summary, init_db
 from game import DIFFICULTY_CONFIG, GameFrame, board_density
 from lang import t
 from ranking import RankingFrame
@@ -49,6 +51,8 @@ class MainApp:
         self.current_user: dict | None = None
         self.current_frame: tk.Widget | None = None
         self._profile_dialog: tk.Toplevel | None = None
+        self._cloud_status_queue: queue.Queue[dict] = queue.Queue()
+        self._cloud_probe_job: str | None = None
         self._icon = load_photo(_ICON_PATH, master=self.root)
         if self._icon is not None:
             self.root.iconphoto(True, self._icon)
@@ -58,12 +62,14 @@ class MainApp:
         self.root.resizable(True, True)
         self.root.protocol("WM_DELETE_WINDOW", self._quit)
         self.root.bind("<Escape>", lambda _event: self._handle_escape())
+        self.root.bind("<Destroy>", self._on_root_destroy, add="+")
         init_db()
         self._show_auth()
         if start_loop:
             self.root.mainloop()
 
     def _swap(self, frame_class, *args) -> None:
+        self._cancel_cloud_probe()
         if self.current_frame is not None:
             self.current_frame.destroy()
         self.current_frame = frame_class(self.root, *args)
@@ -81,6 +87,7 @@ class MainApp:
 
     def _show_menu(self) -> None:
         self._close_profile_dialog()
+        self._cancel_cloud_probe()
         self.root.title(t("menu_title"))
         set_window_geometry(self.root, *LAYOUT["lobby"])
         if self.current_frame is not None:
@@ -104,13 +111,8 @@ class MainApp:
         section_title(title_block, "NEON_SWEEP // MINEFIELD OPS", t("menu_title"), t("menu_subtitle")).pack(
             anchor="w", fill=tk.X
         )
-        operator = tk.Frame(header, bg=COLORS["surface"])
-        operator.pack(side=tk.RIGHT, padx=(12, 22), pady=20)
-        metric_label(operator, t("operator_label"), self.current_user["username"], accent=COLORS["primary"]).pack(
-            side=tk.LEFT, padx=(0, 22)
-        )
-        CyberButton(header, text=t("profile_label"), variant="secondary", command=self._show_profile).pack(
-            side=tk.RIGHT, anchor="n", padx=(0, 8), pady=24
+        CyberButton(header, text=t("profile_label"), variant="secondary", command=self._show_profile, size="large").pack(
+            side=tk.RIGHT, anchor="n", padx=22, pady=24
         )
 
         body = tk.Frame(frame, bg=COLORS["bg"])
@@ -140,17 +142,14 @@ class MainApp:
         footer_outer, footer = make_panel(frame, bg=COLORS["surface"], border=COLORS["border"])
         footer_outer.pack(fill=tk.X, padx=42, pady=(0, 30))
         CyberButton(footer, text=t("btn_ranking"), variant="secondary", command=self._show_ranking).pack(
-            side=tk.LEFT, padx=16, pady=12
-        )
-        metric_label(footer, t("system_ready"), "ONLINE", accent=COLORS["success"]).pack(
-            side=tk.LEFT, padx=18, pady=12
+            side=tk.LEFT, padx=16, pady=12, ipadx=12, ipady=4
         )
         tk.Label(
             footer,
-            text=f"{t('mode_hint')}  //  {t('quick_controls')}",
+            text="NEON_SWEEP // COMMAND DECK",
             font=(FONT_MONO, 9),
             bg=COLORS["surface"],
-            fg=COLORS["muted"],
+            fg=COLORS["subtle"],
         ).pack(side=tk.RIGHT, padx=16, pady=12)
 
     def _lobby_identity_panel(self, parent) -> tk.Frame:
@@ -187,43 +186,78 @@ class MainApp:
         ):
             metric_label(inner, label, value, accent=accent).pack(fill=tk.X, padx=20, pady=(0, 14))
 
-        CyberButton(inner, text=t("profile_label"), variant="secondary", command=self._show_profile).pack(
-            fill=tk.X, padx=20, pady=(16, 8)
-        )
         return outer
 
     def _lobby_status_panel(self, parent) -> tk.Frame:
         outer, inner = make_panel(parent, bg=COLORS["surface"], border=COLORS["border"])
         tk.Label(
             inner,
-            text=t("lobby_status_title"),
+            text=t("cloud_panel_title"),
             font=(FONT_MONO, 9, "bold"),
             bg=COLORS["surface"],
             fg=COLORS["primary"],
         ).pack(anchor="w", padx=20, pady=(22, 8))
         status_items = [
-            ("01", t("lobby_status_scan"), COLORS["primary"]),
-            ("02", t("lobby_status_record"), COLORS["success"]),
-            ("03", t("lobby_status_control"), COLORS["warning"]),
+            (t("cloud_provider"), "GITHUB", COLORS["primary"]),
+            (t("cloud_repository"), "siray1007/minesweeper", COLORS["text"]),
         ]
-        for code, text, accent in status_items:
-            row = tk.Frame(inner, bg=COLORS["surface"])
-            row.pack(fill=tk.X, padx=20, pady=(0, 14))
-            tk.Label(row, text=code, font=(FONT_MONO, 15, "bold"), bg=COLORS["surface"], fg=accent).pack(
-                side=tk.LEFT, padx=(0, 12)
-            )
-            tk.Label(row, text=text, font=(FONT, 9), bg=COLORS["surface"], fg=COLORS["muted"], wraplength=162).pack(
-                side=tk.LEFT, fill=tk.X, expand=True
-            )
+        for label, value, accent in status_items:
+            metric_label(inner, label, value, accent=accent).pack(fill=tk.X, padx=20, pady=(0, 18))
 
         tk.Frame(inner, bg=COLORS["border"], height=1).pack(fill=tk.X, padx=20, pady=(8, 16))
-        metric_label(inner, t("lobby_threat_matrix"), "ARMED", accent=COLORS["danger"]).pack(
-            fill=tk.X, padx=20, pady=(0, 14)
+        self._cloud_mode_metric = metric_label(
+            inner, t("cloud_access"), t("cloud_checking"), accent=COLORS["warning"]
         )
-        CyberButton(inner, text=t("btn_ranking"), variant="secondary", command=self._show_ranking).pack(
-            fill=tk.X, padx=20, pady=(16, 8)
+        self._cloud_mode_metric.pack(fill=tk.X, padx=20, pady=(0, 18))
+        self._cloud_mode_value = self._cloud_mode_metric.winfo_children()[-1]
+        self._cloud_link_metric = metric_label(
+            inner, t("cloud_link"), t("cloud_checking"), accent=COLORS["warning"]
         )
+        self._cloud_link_metric.pack(fill=tk.X, padx=20, pady=(0, 18))
+        self._cloud_link_value = self._cloud_link_metric.winfo_children()[-1]
+        self._start_cloud_probe()
         return outer
+
+    def _start_cloud_probe(self) -> None:
+        def probe() -> None:
+            self._cloud_status_queue.put(cloud_connection_status())
+
+        threading.Thread(target=probe, daemon=True).start()
+        self._cloud_probe_job = self.root.after(100, self._poll_cloud_probe)
+
+    def _poll_cloud_probe(self) -> None:
+        self._cloud_probe_job = None
+        try:
+            status = self._cloud_status_queue.get_nowait()
+        except queue.Empty:
+            if self.current_user is not None:
+                self._cloud_probe_job = self.root.after(100, self._poll_cloud_probe)
+            return
+        if not hasattr(self, "_cloud_link_value") or not self._cloud_link_value.winfo_exists():
+            return
+        connected = status["connected"]
+        writable = status["writable"]
+        self._cloud_link_value.configure(
+            text=t("cloud_connected") if connected else t("cloud_offline"),
+            fg=COLORS["success"] if connected else COLORS["danger"],
+        )
+        self._cloud_mode_value.configure(
+            text=t("cloud_read_write") if writable else t("cloud_read_only"),
+            fg=COLORS["success"] if writable else COLORS["warning"],
+        )
+
+    def _cancel_cloud_probe(self) -> None:
+        if self._cloud_probe_job is None:
+            return
+        try:
+            self.root.after_cancel(self._cloud_probe_job)
+        except tk.TclError:
+            pass
+        self._cloud_probe_job = None
+
+    def _on_root_destroy(self, event) -> None:
+        if event.widget is self.root:
+            self._cancel_cloud_probe()
 
     def _difficulty_card(
         self, parent, column: int, key: str, code: str, label: str, description: str, accent: str
@@ -305,6 +339,7 @@ class MainApp:
         if self.current_user is None:
             self._show_auth()
             return
+        self._cancel_cloud_probe()
 
         dialog = self._profile_dialog
         if dialog is not None and dialog.winfo_exists():
@@ -320,13 +355,15 @@ class MainApp:
         self._profile_dialog = dialog
         dialog.title(t("profile_label"))
         dialog.configure(bg=COLORS["bg"])
-        dialog.resizable(False, False)
+        dialog.resizable(True, True)
         dialog.transient(self.root)
         dialog.protocol("WM_DELETE_WINDOW", self._close_profile_dialog)
         dialog.bind("<Escape>", lambda _event: self._close_profile_dialog())
+        dialog.grid_columnconfigure(0, weight=1)
+        dialog.grid_rowconfigure(0, weight=1)
 
         outer, inner = make_panel(dialog, bg=COLORS["surface"], border=COLORS["border_hot"])
-        outer.pack(fill=tk.BOTH, expand=True, padx=14, pady=14)
+        outer.grid(row=0, column=0, sticky="nsew", padx=14, pady=(14, 8))
 
         header = tk.Frame(inner, bg=COLORS["surface"])
         header.pack(fill=tk.X, padx=24, pady=(20, 8))
@@ -483,21 +520,38 @@ class MainApp:
                     fg=COLORS["muted"],
                 ).pack(anchor="e", pady=(4, 0))
 
-        actions = tk.Frame(inner, bg=COLORS["surface"])
-        actions.pack(fill=tk.X, padx=24, pady=(18, 20))
-        CyberButton(actions, text=t("profile_switch_account"), variant="secondary", command=self._switch_account).pack(
-            side=tk.LEFT, fill=tk.X, expand=True
+        actions = tk.Frame(dialog, bg=COLORS["surface"])
+        actions.grid(row=1, column=0, sticky="ew", padx=14, pady=(0, 14), ipady=11)
+        actions.configure(padx=24)
+        actions.grid_columnconfigure((0, 1), weight=1, uniform="profile_actions")
+        actions.grid_rowconfigure(0, minsize=62)
+        self._profile_switch_button = CyberButton(
+            actions,
+            text=t("profile_switch_account"),
+            variant="secondary",
+            command=self._switch_account,
+            size="large",
         )
-        CyberButton(actions, text=t("btn_logout"), variant="danger", command=self._logout).pack(
-            side=tk.LEFT, fill=tk.X, expand=True, padx=8
+        self._profile_switch_button.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
+        self._profile_logout_button = CyberButton(
+            actions,
+            text=t("btn_logout"),
+            variant="danger",
+            command=self._logout,
+            size="large",
         )
+        self._profile_logout_button.grid(row=0, column=1, sticky="nsew", padx=(8, 0))
+        actions.tkraise()
 
         dialog.update_idletasks()
         width, height, min_width, min_height = LAYOUT["profile"]
+        width = min(width, max(min_width, dialog.winfo_screenwidth() - 80))
+        height = min(height, max(680, dialog.winfo_screenheight() - 180))
         x = self.root.winfo_rootx() + max(0, (self.root.winfo_width() - width) // 2)
         y = self.root.winfo_rooty() + max(0, (self.root.winfo_height() - height) // 2)
+        y = max(20, min(y, dialog.winfo_screenheight() - height - 20))
         dialog.geometry(f"{width}x{height}+{x}+{y}")
-        dialog.minsize(min_width, min_height)
+        dialog.minsize(min(min_width, width), min(680, height))
         dialog.grab_set()
         dialog.focus_set()
 
@@ -526,6 +580,7 @@ class MainApp:
             self._show_menu()
 
     def _quit(self) -> None:
+        self._cancel_cloud_probe()
         self._close_profile_dialog()
         if self.current_user and not messagebox.askyesno(t("title"), t("quit_confirm"), parent=self.root):
             return

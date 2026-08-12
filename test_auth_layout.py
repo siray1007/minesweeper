@@ -1,11 +1,28 @@
+import os
+import tempfile
 import tkinter as tk
 import unittest
 from unittest.mock import patch
 
 from auth import AuthFrame
+import lang
+from lang import get_lang, save_lang
 
 
 class AuthLayoutTests(unittest.TestCase):
+    def setUp(self):
+        self.original_lang = get_lang()
+        fd, self.lang_file = tempfile.mkstemp(suffix=".txt")
+        os.close(fd)
+        self.original_lang_file = lang._LANG_FILE
+        lang._LANG_FILE = self.lang_file
+
+    def tearDown(self):
+        save_lang(self.original_lang)
+        lang._LANG_FILE = self.original_lang_file
+        if os.path.exists(self.lang_file):
+            os.remove(self.lang_file)
+
     def test_registration_button_is_inside_login_card(self):
         root = tk.Tk()
         root.geometry('520x680')
@@ -23,6 +40,21 @@ class AuthLayoutTests(unittest.TestCase):
 
         self.assertGreater(button.winfo_height(), 1)
         self.assertLessEqual(button_bottom, card_bottom)
+        root.destroy()
+
+    def test_language_switch_preserves_login_input(self):
+        root = tk.Tk()
+        with patch('auth.os.path.exists', return_value=False):
+            frame = AuthFrame(root, lambda user: None)
+        frame.pack(fill=tk.BOTH, expand=True)
+        root.update()
+        frame._user.insert(0, "ssr")
+
+        frame._change_language("en")
+        root.update()
+
+        self.assertEqual(frame._user.get(), "ssr")
+        self.assertEqual(get_lang(), "en")
         root.destroy()
 
 if __name__ == '__main__':

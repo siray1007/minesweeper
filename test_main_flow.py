@@ -7,6 +7,7 @@ from unittest.mock import patch
 from auth import AuthFrame
 import database
 from main import MainApp
+from lang import t
 
 
 class MainFlowTests(unittest.TestCase):
@@ -55,8 +56,39 @@ class MainFlowTests(unittest.TestCase):
             self.assertTrue(app._profile_dialog.winfo_exists())
             self.assertEqual(app._profile_summary["total_matches"], 2)
             self.assertEqual(app._profile_summary["wins"], 1)
+            self.assertGreaterEqual(app._profile_switch_button.winfo_height(), 56)
+            self.assertGreaterEqual(app._profile_logout_button.winfo_height(), 56)
+            self.assertEqual(app._profile_switch_button.winfo_width(), app._profile_logout_button.winfo_width())
+            self.assertTrue(app._profile_switch_button.winfo_viewable())
+            self.assertTrue(app._profile_logout_button.winfo_viewable())
+            dialog_bottom = app._profile_dialog.winfo_rooty() + app._profile_dialog.winfo_height()
+            button_bottom = app._profile_switch_button.winfo_rooty() + app._profile_switch_button.winfo_height()
+            self.assertLessEqual(button_bottom, dialog_bottom)
         finally:
             app._close_profile_dialog()
+            app.root.destroy()
+
+    def test_lobby_has_one_profile_and_one_ranking_entry(self):
+        app = self._logged_in_app()
+        try:
+            app.root.update()
+
+            texts = []
+            pending = [app.current_frame]
+            while pending:
+                widget = pending.pop()
+                pending.extend(widget.winfo_children())
+                try:
+                    text = widget.cget("text")
+                except tk.TclError:
+                    continue
+                if text:
+                    texts.append(text)
+
+            self.assertEqual(texts.count(t("profile_label")), 1)
+            self.assertEqual(texts.count(t("btn_ranking")), 1)
+            self.assertEqual(texts.count(app.current_user["username"]), 1)
+        finally:
             app.root.destroy()
 
     def test_switch_account_returns_to_auth(self):

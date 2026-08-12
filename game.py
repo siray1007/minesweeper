@@ -7,7 +7,7 @@ import threading
 import tkinter as tk
 from tkinter import ttk
 
-from database import _gitee_append_ranking, save_match_result, save_ranking
+from database import _github_append_ranking, save_match_result, save_ranking
 from lang import t
 from ui_theme import (
     COLORS,
@@ -352,15 +352,15 @@ class GameFrame(tk.Frame):
 
     def _tile_colors(self, row: int, col: int) -> tuple[str, str]:
         if (row + col) % 2:
-            return COLORS["tile_even"], COLORS["border_dim"]
-        return COLORS["tile_odd"], COLORS["border_dim"]
+            return COLORS["tile_even"], COLORS["tile_border"]
+        return COLORS["tile_odd"], COLORS["tile_border"]
 
     def _draw_cell(self, canvas, row: int, col: int, size: int, *, small: bool) -> None:
         x1, y1 = col * size, row * size
         x2, y2 = x1 + size, y1 + size
         center_x, center_y = x1 + size // 2, y1 + size // 2
         if self.game.revealed[row][col]:
-            canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["tile_open"], outline=COLORS["border_dim"])
+            canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["tile_open"], outline=COLORS["tile_open_border"])
             value = self.game.board[row][col]
             if value == -1:
                 canvas.create_rectangle(x1 + 3, y1 + 3, x2 - 3, y2 - 3, fill=COLORS["danger_dim"], outline="")
@@ -380,7 +380,7 @@ class GameFrame(tk.Frame):
                     fill=NUM_COLORS.get(value, COLORS["text"]),
                 )
         elif self.game.flagged[row][col]:
-            canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["tile_flag"], outline=COLORS["border"])
+            canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["tile_flag"], outline=COLORS["danger"])
             canvas.create_line(x1 + 4, y1 + 4, x2 - 4, y1 + 4, fill=COLORS["danger"], width=2)
             canvas.create_text(
                 center_x,
@@ -450,14 +450,18 @@ class GameFrame(tk.Frame):
         self._actual_cs = size
         for row in range(self.game.rows):
             for col in range(self.game.cols):
-                x1, y1 = col * size + 1, row * size + 1
-                x2, y2 = x1 + size - 2, y1 + size - 2
+                x1, y1 = col * size, row * size
+                x2, y2 = (col + 1) * size, (row + 1) * size
                 center_x, center_y = x1 + max(size - 2, 0) // 2, y1 + max(size - 2, 0) // 2
                 if self.game.revealed[row][col]:
-                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["tile_open"], outline="")
+                    self.canvas.create_rectangle(
+                        x1, y1, x2, y2, fill=COLORS["tile_open"], outline=COLORS["tile_open_border"]
+                    )
                     value = self.game.board[row][col]
                     if value == -1 and size >= 10:
-                        self.canvas.create_rectangle(x1 + 1, y1 + 1, x2 - 1, y2 - 1, fill=COLORS["danger_dim"], outline="")
+                        self.canvas.create_rectangle(
+                            x1 + 1, y1 + 1, x2 - 1, y2 - 1, fill=COLORS["danger_dim"], outline=COLORS["danger"]
+                        )
                         self.canvas.create_text(
                             center_x,
                             center_y,
@@ -474,7 +478,7 @@ class GameFrame(tk.Frame):
                             fill=NUM_COLORS.get(value, COLORS["text"]),
                         )
                 elif self.game.flagged[row][col]:
-                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["tile_flag"], outline="")
+                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS["tile_flag"], outline=COLORS["danger"])
                     if size >= 12:
                         self.canvas.create_text(
                             center_x,
@@ -484,8 +488,8 @@ class GameFrame(tk.Frame):
                             fill=COLORS["danger"],
                         )
                 else:
-                    fill, _outline = self._tile_colors(row, col)
-                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=fill, outline="")
+                    fill, outline = self._tile_colors(row, col)
+                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=fill, outline=outline)
         width, height = self.game.cols * size, self.game.rows * size
         canvas_width, canvas_height = int(round(width)), int(round(height))
         self.canvas.configure(width=canvas_width, height=canvas_height)
@@ -769,7 +773,7 @@ class GameFrame(tk.Frame):
         save_match_result(self.user["id"], self.difficulty, "win", self.timer_seconds)
         self._show_result_panel("win")
         threading.Thread(
-            target=_gitee_append_ranking,
+            target=_github_append_ranking,
             args=(self.user["username"], self.difficulty, self.timer_seconds),
             daemon=True,
         ).start()

@@ -29,11 +29,28 @@ class AuthFrame(tk.Frame):
             widget.destroy()
 
     def _change_language(self, language: str) -> None:
+        values = {}
+        focused_name = None
+        for name in ("_user", "_pwd", "_reg_user", "_reg_pwd", "_reg_cfm"):
+            field = getattr(self, name, None)
+            if field is not None and field.winfo_exists():
+                values[name] = field.get()
+                if field is self.focus_get():
+                    focused_name = name
         save_lang(language)
+        self.winfo_toplevel().title(t("title"))
         if self._mode == "register":
             self._show_register()
         else:
             self._show_login()
+        for name, value in values.items():
+            field = getattr(self, name, None)
+            if field is not None and field.winfo_exists():
+                field.insert(0, value)
+        focused_field = getattr(self, focused_name, None) if focused_name else None
+        if focused_field is not None and focused_field.winfo_exists():
+            focused_field.focus_set()
+            focused_field.icursor(tk.END)
 
     def _language_selector(self) -> None:
         container = tk.Frame(self, bg=COLORS["bg"])
@@ -43,34 +60,16 @@ class AuthFrame(tk.Frame):
             side=tk.LEFT, padx=(0, 8)
         )
 
-        current_name = dict(LANG_OPTIONS).get(get_lang(), "中文")
-        menu_button = tk.Menubutton(
-            container,
-            text=f"{current_name}  v",
-            font=(FONT, 10, "bold"),
-            bg=COLORS["surface"],
-            fg=COLORS["text"],
-            activebackground=COLORS["surface_hover"],
-            activeforeground=COLORS["text"],
-            relief="flat",
-            bd=0,
-            padx=12,
-            pady=7,
-            cursor="hand2",
-        )
-        menu_button.pack(side=tk.LEFT)
-        menu = tk.Menu(
-            menu_button,
-            tearoff=0,
-            bg=COLORS["surface"],
-            fg=COLORS["text"],
-            activebackground=COLORS["primary"],
-            activeforeground="#08101b",
-            font=(FONT, 10),
-        )
+        segment = tk.Frame(container, bg=COLORS["border"], padx=1, pady=1)
+        segment.pack(side=tk.LEFT)
         for code, name in LANG_OPTIONS:
-            menu.add_command(label=name, command=lambda selected=code: self._change_language(selected))
-        menu_button.configure(menu=menu)
+            CyberButton(
+                segment,
+                text=name,
+                variant="primary" if get_lang() == code else "secondary",
+                command=lambda selected=code: self._change_language(selected),
+                width=6,
+            ).pack(side=tk.LEFT, padx=(0 if code == LANG_OPTIONS[0][0] else 1, 0))
 
     def _create_card(self, height: int) -> tuple[tk.Frame, tk.Frame]:
         card, inner = make_panel(self, bg=COLORS["surface"], border=COLORS["border_hot"])
