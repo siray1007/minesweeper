@@ -9,7 +9,7 @@ $appName = [string]([char]0x626B) + [char]0x96F7
 $iconName = $appName + [char]0x56FE + [char]0x6807
 $outputExe = Join-Path $projectDir ($appName + '.exe')
 
-$pyInstallerLocation = (& python -c "import site; print(site.getusersitepackages())").Trim()
+$pyInstallerLocation = (& python -c "import importlib.util, pathlib; spec = importlib.util.find_spec('PyInstaller'); print(pathlib.Path(spec.origin).parent.parent if spec else '')").Trim()
 if (-not $pyInstallerLocation) {
     throw 'PyInstaller is not installed for the active Python interpreter.'
 }
