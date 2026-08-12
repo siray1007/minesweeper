@@ -10,6 +10,7 @@ on:
       - 'build_release.ps1'
       - '*.png'
       - '*.ico'
+      - '.github/workflows/release.yml'
 
 permissions:
   contents: write
@@ -30,25 +31,27 @@ jobs:
       - name: Install PyInstaller
         run: pip install pyinstaller
 
-      - name: Build exe
+      - name: Build executable
         shell: powershell
         run: |
           .\build_release.ps1
-          Copy-Item -LiteralPath '.\扫雷.exe' -Destination '.\CyberMinesweeper.exe' -Force
+          if (-not (Test-Path -LiteralPath '.\CyberMinesweeper.exe')) {
+            throw 'CyberMinesweeper.exe was not produced.'
+          }
 
       - name: Generate tag
         shell: bash
         run: |
-          TAG="v$(date +'%Y.%m.%d-%H%M')"
-          echo "TAG=$TAG" >> $GITHUB_ENV
-          git tag $TAG
-          git push origin $TAG
+          TAG="v$(date +'%Y.%m.%d-%H%M')-${GITHUB_RUN_NUMBER}"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          git tag "$TAG"
+          git push origin "$TAG"
 
-      - name: Upload Release
+      - name: Upload release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG }}
-          name: "扫雷游戏 ${{ env.TAG }}"
+          name: "Cyber Minesweeper ${{ env.TAG }}"
           generate_release_notes: true
           files: CyberMinesweeper.exe
         env:
