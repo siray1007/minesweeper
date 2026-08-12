@@ -7,21 +7,46 @@ from tkinter import ttk
 
 
 COLORS = {
-    'bg': '#0b1020',
-    'surface': '#121a2f',
-    'surface_alt': '#182440',
-    'surface_hover': '#213154',
-    'border': '#2a3b61',
-    'text': '#f4f7ff',
-    'muted': '#9aa8c2',
-    'subtle': '#6f7d99',
-    'primary': '#ff4d6d',
-    'primary_hover': '#ff6b85',
-    'primary_pressed': '#dc3657',
-    'success': '#2ed5a1',
-    'warning': '#ffc857',
-    'danger': '#ff6b6b',
-    'input': '#080d1b',
+    'bg': '#060b14',
+    'surface': '#0d1422',
+    'surface_alt': '#111b2e',
+    'surface_hover': '#18253a',
+    'border': '#22324a',
+    'text': '#edf3ff',
+    'muted': '#9aa8c0',
+    'subtle': '#647189',
+    'primary': '#34d5ff',
+    'primary_hover': '#6be5ff',
+    'primary_pressed': '#1a9cc4',
+    'success': '#35e0a1',
+    'warning': '#ffd166',
+    'danger': '#ff5c7a',
+    'input': '#050912',
+}
+
+LAYOUT = {
+    'auth': {
+        'window': (760, 820, 620, 720),
+        'card': (520, 620),
+        'field': 13,
+    },
+    'lobby': {
+        'window': (1280, 840, 1120, 760),
+        'gap': 18,
+        'header_height': 120,
+    },
+    'ranking': {
+        'window': (1220, 820, 1080, 720),
+    },
+    'game_easy': {
+        'window': (860, 860, 760, 760),
+    },
+    'game_medium': {
+        'window': (1280, 980, 1120, 860),
+    },
+    'game_hard': {
+        'window': (1440, 1060, 1280, 920),
+    },
 }
 
 FONT = 'Microsoft YaHei UI'
@@ -38,9 +63,9 @@ def configure_ttk(root: tk.Misc) -> None:
     style.configure(
         'Primary.TButton',
         font=(FONT, 11, 'bold'),
-        padding=(18, 10),
+        padding=(20, 11),
         background=COLORS['primary'],
-        foreground='white',
+        foreground='#ffffff',
         borderwidth=0,
         focusthickness=2,
         focuscolor=COLORS['warning'],
@@ -55,7 +80,7 @@ def configure_ttk(root: tk.Misc) -> None:
     style.configure(
         'Secondary.TButton',
         font=(FONT, 10, 'bold'),
-        padding=(14, 8),
+        padding=(16, 9),
         background=COLORS['surface_alt'],
         foreground=COLORS['text'],
         borderwidth=1,
@@ -71,7 +96,7 @@ def configure_ttk(root: tk.Misc) -> None:
     style.configure(
         'Ghost.TButton',
         font=(FONT, 10),
-        padding=(12, 7),
+        padding=(14, 8),
         background=COLORS['surface'],
         foreground=COLORS['muted'],
         borderwidth=0,
@@ -85,7 +110,11 @@ def configure_ttk(root: tk.Misc) -> None:
     )
 
     style.configure(
-        'App.TNotebook', background=COLORS['bg'], borderwidth=0, tabmargins=0)
+        'App.TNotebook',
+        background=COLORS['bg'],
+        borderwidth=0,
+        tabmargins=0,
+    )
     style.configure(
         'App.TNotebook.Tab',
         font=(FONT, 10, 'bold'),
@@ -114,7 +143,7 @@ def configure_ttk(root: tk.Misc) -> None:
     style.configure(
         'App.Treeview.Heading',
         font=(FONT, 10, 'bold'),
-        padding=(8, 9),
+        padding=(8, 10),
         background=COLORS['surface_alt'],
         foreground=COLORS['muted'],
         relief='flat',
@@ -153,6 +182,34 @@ def make_entry(parent: tk.Misc, *, show: str = '') -> tk.Entry:
         highlightbackground=COLORS['border'],
         highlightcolor=COLORS['primary'],
     )
+
+
+def metric_label(parent: tk.Misc, title: str, value: str, *, bg: str | None = None,
+                 accent: str = COLORS['primary']) -> tk.Frame:
+    container = tk.Frame(parent, bg=bg or COLORS['surface'])
+    tk.Label(
+        container, text=title, font=(FONT, 9),
+        bg=container['bg'], fg=COLORS['muted'],
+    ).pack(anchor='w')
+    tk.Label(
+        container, text=value, font=(FONT, 17, 'bold'),
+        bg=container['bg'], fg=accent,
+    ).pack(anchor='w', pady=(3, 0))
+    return container
+
+
+def section_title(parent: tk.Misc, title: str, subtitle: str = '') -> tk.Frame:
+    block = tk.Frame(parent, bg=parent['bg'])
+    tk.Label(
+        block, text=title, font=(FONT, 24, 'bold'),
+        bg=block['bg'], fg=COLORS['text'],
+    ).pack(anchor='w')
+    if subtitle:
+        tk.Label(
+            block, text=subtitle, font=(FONT, 10),
+            bg=block['bg'], fg=COLORS['muted'],
+        ).pack(anchor='w', pady=(4, 0))
+    return block
 
 
 def set_window_geometry(root: tk.Misc, width: int, height: int,

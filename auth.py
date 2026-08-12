@@ -7,7 +7,7 @@ from tkinter import messagebox, ttk
 
 from database import login_user, register_user
 from lang import LANG_OPTIONS, get_lang, save_lang, t
-from ui_theme import COLORS, FONT, configure_ttk, load_photo, make_entry
+from ui_theme import COLORS, FONT, LAYOUT, configure_ttk, load_photo, make_entry, section_title
 
 
 _ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bomb32.png')
@@ -19,6 +19,9 @@ class AuthFrame(tk.Frame):
         configure_ttk(parent)
         self.on_login = on_login
         self._mode = 'login'
+        self._icon_image = None
+        self._auth_card = None
+        self.register_nav_button = None
         self._show_login()
 
     def _clear(self) -> None:
@@ -34,10 +37,10 @@ class AuthFrame(tk.Frame):
 
     def _language_selector(self) -> None:
         container = tk.Frame(self, bg=COLORS['bg'])
-        container.place(x=20, y=18)
+        container.place(x=22, y=18)
 
         tk.Label(
-            container, text='语言', font=(FONT, 9),
+            container, text=t('language'), font=(FONT, 9),
             bg=COLORS['bg'], fg=COLORS['muted'],
         ).pack(side=tk.LEFT, padx=(0, 8))
 
@@ -53,51 +56,62 @@ class AuthFrame(tk.Frame):
             relief='flat',
             bd=0,
             padx=12,
-            pady=7,
+            pady=8,
             cursor='hand2',
         )
         menu_button.pack(side=tk.LEFT)
         menu = tk.Menu(
-            menu_button, tearoff=0,
-            bg=COLORS['surface'], fg=COLORS['text'],
+            menu_button,
+            tearoff=0,
+            bg=COLORS['surface'],
+            fg=COLORS['text'],
             activebackground=COLORS['primary'],
-            activeforeground='white', font=(FONT, 10),
+            activeforeground='white',
+            font=(FONT, 10),
         )
         for code, name in LANG_OPTIONS:
             menu.add_command(
-                label=name, command=lambda selected=code: self._change_language(selected))
+                label=name,
+                command=lambda selected=code: self._change_language(selected),
+            )
         menu_button.configure(menu=menu)
 
     def _create_card(self, height: int) -> tuple[tk.Frame, tk.Frame]:
+        card_width, _ = LAYOUT['auth']['card']
         card = tk.Frame(
-            self, bg=COLORS['border'], bd=0,
-            highlightthickness=0,
+            self,
+            bg=COLORS['surface'],
+            highlightthickness=1,
+            highlightbackground=COLORS['border'],
         )
+        card.place(relx=0.5, rely=0.53, anchor='center', width=card_width, height=height)
+        card.grid_columnconfigure(1, weight=1)
+        accent = tk.Frame(card, bg=COLORS['primary'], width=6)
+        accent.pack(side=tk.LEFT, fill=tk.Y)
         inner = tk.Frame(card, bg=COLORS['surface'])
-        inner.pack(fill=tk.BOTH, expand=True, padx=1, pady=1)
-        card.place(relx=0.5, rely=0.52, anchor='center', width=440, height=height)
+        inner.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self._auth_card = card
         return card, inner
 
     def _header(self, parent: tk.Misc, subtitle: str) -> None:
+        head = tk.Frame(parent, bg=COLORS['surface'])
+        head.pack(fill=tk.X, padx=34, pady=(26, 18))
         image = load_photo(_ICON, master=self)
         if image is not None:
             self._icon_image = image
-            tk.Label(parent, image=image, bg=COLORS['surface']).pack(pady=(26, 6))
+            tk.Label(head, image=image, bg=COLORS['surface']).pack(side=tk.LEFT, padx=(0, 16))
         else:
             tk.Label(
-                parent, text='●', font=(FONT, 22, 'bold'),
-                bg=COLORS['surface'], fg=COLORS['primary'],
-            ).pack(pady=(26, 6))
+                head,
+                text='◆',
+                font=(FONT, 22, 'bold'),
+                bg=COLORS['surface'],
+                fg=COLORS['primary'],
+            ).pack(side=tk.LEFT, padx=(0, 16))
 
-        tk.Label(
-            parent, text=t('title'), font=(FONT, 28, 'bold'),
-            bg=COLORS['surface'], fg=COLORS['text'],
-        ).pack()
-        tk.Label(
-            parent, text=subtitle, font=(FONT, 12),
-            bg=COLORS['surface'], fg=COLORS['muted'],
-        ).pack(pady=(4, 22))
+        title_block = tk.Frame(head, bg=COLORS['surface'])
+        title_block.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        section_title(title_block, t('title'), subtitle).pack(fill=tk.X)
 
     def _field(self, parent: tk.Misc, label: str, *, show: str = '') -> tk.Entry:
         tk.Label(
@@ -108,31 +122,34 @@ class AuthFrame(tk.Frame):
         entry.pack(fill=tk.X, ipady=10, pady=(0, 16))
         return entry
 
+    def _form_frame(self, parent: tk.Misc) -> tk.Frame:
+        form = tk.Frame(parent, bg=COLORS['surface'])
+        form.pack(fill=tk.X, padx=36, pady=(0, 20))
+        return form
+
     def _show_login(self) -> None:
         self._mode = 'login'
         self._clear()
         self._language_selector()
-        _, card = self._create_card(570)
+        _, card = self._create_card(640)
         self._header(card, t('login'))
 
-        form = tk.Frame(card, bg=COLORS['surface'])
-        form.pack(fill=tk.X, padx=52)
+        form = self._form_frame(card)
         self._user = self._field(form, t('username'))
-        self._pwd = self._field(form, t('password'), show='●')
+        self._pwd = self._field(form, t('password'), show='*')
 
-        login_button = ttk.Button(
-            form, text=t('btn_login'), style='Primary.TButton', command=self._do_login)
-        login_button.pack(fill=tk.X, pady=(2, 14))
+        ttk.Button(
+            form, text=t('btn_login'), style='Primary.TButton', command=self._do_login,
+        ).pack(fill=tk.X, pady=(2, 14))
 
         separator = tk.Frame(form, bg=COLORS['border'], height=1)
         separator.pack(fill=tk.X, pady=(2, 12))
         tk.Label(
             form, text=t('no_account'), font=(FONT, 9),
             bg=COLORS['surface'], fg=COLORS['subtle'],
-        ).pack(pady=(0, 7))
+        ).pack(pady=(0, 8))
         self.register_nav_button = ttk.Button(
-            form, text=t('to_register'), style='Secondary.TButton',
-            command=self._show_register,
+            form, text=t('to_register'), style='Secondary.TButton', command=self._show_register,
         )
         self.register_nav_button.pack(fill=tk.X)
 
@@ -144,20 +161,18 @@ class AuthFrame(tk.Frame):
         self._mode = 'register'
         self._clear()
         self._language_selector()
-        _, card = self._create_card(650)
+        _, card = self._create_card(720)
         self._header(card, t('register'))
 
-        form = tk.Frame(card, bg=COLORS['surface'])
-        form.pack(fill=tk.X, padx=52)
+        form = self._form_frame(card)
         self._reg_user = self._field(form, t('username'))
-        self._reg_pwd = self._field(form, t('pwd_hint'), show='●')
-        self._reg_cfm = self._field(form, t('confirm_pwd'), show='●')
+        self._reg_pwd = self._field(form, t('pwd_hint'), show='*')
+        self._reg_cfm = self._field(form, t('confirm_pwd'), show='*')
 
-        register_button = ttk.Button(
+        ttk.Button(
             form, text=t('btn_register'), style='Primary.TButton',
             command=self._do_register,
-        )
-        register_button.pack(fill=tk.X, pady=(0, 12))
+        ).pack(fill=tk.X, pady=(0, 12))
         ttk.Button(
             form, text=t('to_login'), style='Ghost.TButton',
             command=self._show_login,

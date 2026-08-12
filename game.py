@@ -1,7 +1,6 @@
 """Minesweeper rules and the responsive Tk game screen."""
 from __future__ import annotations
 
-import colorsys
 import os
 import random
 import threading
@@ -10,43 +9,47 @@ from tkinter import messagebox, ttk
 
 from database import _gitee_append_ranking, save_ranking
 from lang import t
-from ui_theme import COLORS, FONT, configure_ttk, load_photo, set_window_geometry
+from ui_theme import COLORS, FONT, LAYOUT, configure_ttk, load_photo, metric_label, set_window_geometry
 
 
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 _BOMB_PNG = os.path.join(_BASE_DIR, 'bomb16.png')
 
 NUM_COLORS = {
-    1: '#7cc7ff', 2: '#67d39b', 3: '#ff7b7b', 4: '#c59bff',
-    5: '#ffc26b', 6: '#63d9dd', 7: '#e6ecf7', 8: '#a9b6c9',
+    1: '#7cc7ff',
+    2: '#67d39b',
+    3: '#ff7b7b',
+    4: '#c59bff',
+    5: '#ffc26b',
+    6: '#63d9dd',
+    7: '#e6ecf7',
+    8: '#a9b6c9',
+}
+
+BOARD_COLORS = {
+    'closed': '#102235',
+    'closed_alt': '#132940',
+    'open': '#09121f',
+    'grid': '#203a54',
+    'grid_major': '#2b5872',
+    'flag': '#123a43',
+    'hover': '#34d5ff',
 }
 
 DIFFICULTY_CONFIG = {
-    '9x9': {'rows': 9, 'cols': 9, 'mines': 10, 'cell': 48, 'title': '简单 9×9'},
-    '27x27': {'rows': 27, 'cols': 27, 'mines': 100, 'cell': 20, 'title': '进阶 27×27'},
-    '81x81': {'rows': 81, 'cols': 81, 'mines': 800, 'cell': 14, 'title': '困难 81×81'},
+    '9x9': {'rows': 9, 'cols': 9, 'mines': 10, 'cell': 56, 'title_key': 'easy_title'},
+    '27x27': {'rows': 27, 'cols': 27, 'mines': 100, 'cell': 24, 'title_key': 'medium_title'},
+    '81x81': {'rows': 81, 'cols': 81, 'mines': 800, 'cell': 16, 'title_key': 'hard_title'},
 }
 
 
-def _pastel_pair() -> tuple[tuple[int, int, int], tuple[int, int, int]]:
-    colors = []
-    for _ in range(2):
-        hue = random.random()
-        red, green, blue = colorsys.hsv_to_rgb(hue, 0.30, 0.88)
-        colors.append((int(red * 255), int(green * 255), int(blue * 255)))
-    return colors[0], colors[1]
-
-
-def _mix(c1, c2, ratio: float) -> str:
-    ratio = max(0.0, min(1.0, ratio))
-    channels = [int(a + (b - a) * ratio) for a, b in zip(c1, c2)]
-    return '#{:02x}{:02x}{:02x}'.format(*channels)
-
-
-def _lighten(color: str, amount: float) -> str:
-    rgb = [int(color[offset:offset + 2], 16) for offset in (1, 3, 5)]
-    rgb = [min(255, int(channel + 255 * amount)) for channel in rgb]
-    return '#{:02x}{:02x}{:02x}'.format(*rgb)
+def calculate_fit_zoom(view_width: int, view_height: int, rows: int, cols: int,
+                       cell_size: int) -> float:
+    """Return a supported zoom that fits the whole board in the viewport."""
+    if min(view_width, view_height, rows, cols, cell_size) <= 0:
+        return 1.0
+    zoom = min(view_width / (cols * cell_size), view_height / (rows * cell_size))
+    return round(max(0.25, min(3.0, zoom)), 2)
 
 
 class MinesweeperGame:
@@ -179,72 +182,100 @@ class GameFrame(tk.Frame):
         self.difficulty = difficulty
         self.on_back = on_back
         self.cfg = DIFFICULTY_CONFIG[difficulty]
+        self.difficulty_title = t(self.cfg['title_key'])
         self.game = MinesweeperGame(difficulty)
         self.cell_size = self.cfg['cell']
         self.timer_running = False
         self.timer_seconds = 0
         self._after_id = None
+        self._fit_after_id = None
         self.zoom = 1.0
-        self._gradient_start, self._gradient_end = _pastel_pair()
-        self._gradient_max = max(self.cfg['rows'] + self.cfg['cols'] - 2, 1)
+        self._hover_cell = None
+        self._auto_fit_pending = difficulty == '81x81'
         self._build_ui()
         self._apply_window_size()
 
-    def _gradient(self, row: int, col: int) -> str:
-        return _mix(self._gradient_start, self._gradient_end, (row + col) / self._gradient_max)
+    @staticmethod
+    def _closed_color(row: int, col: int) -> str:
+        return BOARD_COLORS['closed_alt'] if (row + col) % 2 else BOARD_COLORS['closed']
 
     def _apply_window_size(self) -> None:
         root = self.winfo_toplevel()
         if self.difficulty == '81x81':
-            set_window_geometry(root, 1040, 760, 760, 560)
+            width, height, min_width, min_height = LAYOUT['game_hard']['window']
         elif self.difficulty == '27x27':
-            set_window_geometry(root, 760, 760, 620, 620)
+            width, height, min_width, min_height = LAYOUT['game_medium']['window']
         else:
-            set_window_geometry(root, 620, 700, 520, 580)
-        root.title(f"{t('title')} · {self.cfg['title']} · {self.user['username']}")
+            width, height, min_width, min_height = LAYOUT['game_easy']['window']
+        set_window_geometry(root, width, height, min_width, min_height)
+        root.title(f"{t('title')} · {self.difficulty_title} · {self.user['username']}")
 
     def _build_ui(self) -> None:
-        bar = tk.Frame(self, bg=COLORS['surface'], height=64)
+        bar = tk.Frame(self, bg=COLORS['surface'], height=78)
         bar.pack(fill=tk.X, padx=12, pady=(12, 0))
         bar.pack_propagate(False)
         ttk.Button(bar, text=t('btn_back'), style='Ghost.TButton', command=self._back).pack(
-            side=tk.LEFT, padx=8, pady=10)
+            side=tk.LEFT, padx=8, pady=12)
         image = load_photo(_BOMB_PNG, master=self)
         if image is not None:
             self._bomb_image = image
-            tk.Label(bar, image=image, bg=COLORS['surface']).pack(side=tk.LEFT, padx=(10, 5))
-        mine_box = tk.Frame(bar, bg=COLORS['surface'])
-        mine_box.pack(side=tk.LEFT, pady=8)
-        tk.Label(mine_box, text=t('mines'), font=(FONT, 8), bg=COLORS['surface'], fg=COLORS['subtle']).pack(anchor='w')
-        self.mine_label = tk.Label(mine_box, font=('Consolas', 15, 'bold'), bg=COLORS['surface'], fg=COLORS['text'])
-        self.mine_label.pack(anchor='w')
-        tk.Label(bar, text=self.cfg['title'], font=(FONT, 12, 'bold'), bg=COLORS['surface'], fg=COLORS['text']).pack(side=tk.LEFT, expand=True)
-        timer_box = tk.Frame(bar, bg=COLORS['surface'])
-        timer_box.pack(side=tk.RIGHT, padx=14, pady=8)
-        tk.Label(timer_box, text='TIME', font=(FONT, 8), bg=COLORS['surface'], fg=COLORS['subtle']).pack(anchor='e')
-        self.timer_label = tk.Label(timer_box, text='00:00', font=('Consolas', 15, 'bold'), bg=COLORS['surface'], fg=COLORS['text'])
-        self.timer_label.pack(anchor='e')
+            tk.Label(bar, image=image, bg=COLORS['surface']).pack(side=tk.LEFT, padx=(10, 6))
+        mine_box = metric_label(bar, t('mines'), f'{self.game.remaining_mines:02d}', bg=COLORS['surface'], accent=COLORS['text'])
+        mine_box.pack(side=tk.LEFT, padx=(8, 18), pady=10)
+        tk.Label(
+            bar,
+            text=self.difficulty_title,
+            font=(FONT, 15, 'bold'),
+            bg=COLORS['surface'],
+            fg=COLORS['text'],
+        ).pack(side=tk.LEFT, expand=True)
+        timer_box = metric_label(bar, 'TIME', '00:00', bg=COLORS['surface'], accent=COLORS['text'])
+        timer_box.pack(side=tk.RIGHT, padx=14, pady=10)
+        self.timer_label = timer_box.winfo_children()[1]
+        self.mine_label = mine_box.winfo_children()[1]
         self._update_mine_label()
         if self.difficulty == '81x81':
             self._build_large_board()
         else:
             self._build_small_board()
         bottom = tk.Frame(self, bg=COLORS['bg'])
-        bottom.pack(fill=tk.X, padx=20, pady=(0, 14))
+        bottom.pack(fill=tk.X, padx=20, pady=(0, 16))
         ttk.Button(bottom, text=t('btn_restart'), style='Secondary.TButton', command=self.restart).pack(side=tk.LEFT, padx=5)
-        tk.Label(bottom, text='左键翻开 · 右键标记 · 双击数字格快速展开', font=(FONT, 9), bg=COLORS['bg'], fg=COLORS['subtle']).pack(side=tk.RIGHT, padx=6)
+        tk.Label(
+            bottom,
+            text=t('game_hint'),
+            font=(FONT, 9),
+            bg=COLORS['bg'],
+            fg=COLORS['subtle'],
+        ).pack(side=tk.RIGHT, padx=6)
 
     def _bind_canvas(self, canvas):
         canvas.bind('<Button-1>', self._left_click)
         canvas.bind('<Double-Button-1>', self._double_click)
         canvas.bind('<Button-3>', self._right_click)
         canvas.bind('<Button-2>', self._right_click)
+        canvas.bind('<Motion>', self._hover_move)
+        canvas.bind('<Leave>', self._hover_leave)
 
     def _build_small_board(self) -> None:
         width = self.cfg['cols'] * self.cell_size
         height = self.cfg['rows'] * self.cell_size
-        self.canvas = tk.Canvas(self, width=width, height=height, bg=COLORS['input'], highlightthickness=0, cursor='crosshair')
-        self.canvas.pack(padx=20, pady=20, expand=True)
+        shell = tk.Frame(
+            self,
+            bg=COLORS['primary'],
+            highlightthickness=1,
+            highlightbackground=BOARD_COLORS['grid_major'],
+        )
+        shell.pack(padx=20, pady=20, expand=True)
+        self.canvas = tk.Canvas(
+            shell,
+            width=width,
+            height=height,
+            bg=COLORS['input'],
+            highlightthickness=0,
+            cursor='crosshair',
+        )
+        self.canvas.pack(padx=2, pady=2)
         self._bind_canvas(self.canvas)
         self._draw_small()
 
@@ -257,50 +288,64 @@ class GameFrame(tk.Frame):
                 x2, y2 = x1 + size, y1 + size
                 center_x, center_y = x1 + size // 2, y1 + size // 2
                 if self.game.revealed[row][col]:
-                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS['surface_alt'], outline=COLORS['border'])
+                    self.canvas.create_rectangle(
+                        x1, y1, x2, y2,
+                        fill=BOARD_COLORS['open'], outline=BOARD_COLORS['grid'],
+                    )
                     value = self.game.board[row][col]
                     if value == -1:
-                        self.canvas.create_text(center_x, center_y, text='✹', font=('Arial', size // 2), fill=COLORS['danger'])
+                        self.canvas.create_text(center_x, center_y, text='✖', font=('Arial', size // 2), fill=COLORS['danger'])
                     elif value > 0:
                         self.canvas.create_text(center_x, center_y, text=str(value), font=('Arial', size // 2, 'bold'), fill=NUM_COLORS.get(value, COLORS['text']))
                 elif self.game.flagged[row][col]:
-                    color = self._gradient(row, col)
-                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline=COLORS['border'])
-                    self.canvas.create_text(center_x, center_y, text='⚑', font=('Arial', size // 2), fill=COLORS['danger'])
+                    self.canvas.create_rectangle(
+                        x1, y1, x2, y2,
+                        fill=BOARD_COLORS['flag'], outline=COLORS['warning'], width=2,
+                    )
+                    self.canvas.create_text(center_x, center_y, text='⚑', font=('Arial', size // 2), fill=COLORS['warning'])
                 else:
-                    color = self._gradient(row, col)
-                    if (row + col) % 2:
-                        color = _lighten(color, 0.06)
-                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline=COLORS['border'])
+                    outline = BOARD_COLORS['grid_major'] if row % 3 == 0 and col % 3 == 0 else BOARD_COLORS['grid']
+                    self.canvas.create_rectangle(
+                        x1, y1, x2, y2,
+                        fill=self._closed_color(row, col), outline=outline,
+                    )
 
     def _build_large_board(self) -> None:
-        outer = tk.Frame(self, bg=COLORS['surface'])
+        outer = tk.Frame(
+            self,
+            bg=COLORS['surface'],
+            highlightthickness=1,
+            highlightbackground=BOARD_COLORS['grid_major'],
+        )
         outer.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         outer.grid_rowconfigure(0, weight=1)
         outer.grid_columnconfigure(0, weight=1)
-        self.scroll_canvas = tk.Canvas(outer, width=780, height=560, bg=COLORS['input'], highlightthickness=0)
+        self.scroll_canvas = tk.Canvas(outer, width=980, height=680, bg=COLORS['input'], highlightthickness=0)
         self.h_bar = ttk.Scrollbar(outer, orient=tk.HORIZONTAL, command=self.scroll_canvas.xview)
         self.v_bar = ttk.Scrollbar(outer, orient=tk.VERTICAL, command=self.scroll_canvas.yview)
         self.scroll_canvas.configure(xscrollcommand=self.h_bar.set, yscrollcommand=self.v_bar.set)
+        self.scroll_canvas.bind('<Configure>', self._viewport_resized)
         self.scroll_canvas.grid(row=0, column=0, sticky='nsew')
         self.h_bar.grid(row=1, column=0, sticky='ew')
         self.v_bar.grid(row=0, column=1, sticky='ns')
         self.canvas = tk.Canvas(self.scroll_canvas, bg=COLORS['input'], highlightthickness=0)
-        self.scroll_canvas.create_window(0, 0, window=self.canvas, anchor='nw')
+        self._canvas_window = self.scroll_canvas.create_window(
+            0, 0, window=self.canvas, anchor='nw',
+        )
         self._bind_canvas(self.canvas)
         zoom_bar = tk.Frame(self, bg=COLORS['bg'])
         zoom_bar.pack(fill=tk.X, padx=20, pady=(0, 8))
-        ttk.Button(zoom_bar, text='−', style='Secondary.TButton', command=self._zoom_out, width=4).pack(side=tk.LEFT, padx=2)
+        ttk.Button(zoom_bar, text='-', style='Secondary.TButton', command=self._zoom_out, width=4).pack(side=tk.LEFT, padx=2)
         self.zoom_label = tk.Label(zoom_bar, text='100%', font=(FONT, 9, 'bold'), bg=COLORS['bg'], fg=COLORS['muted'], width=6)
         self.zoom_label.pack(side=tk.LEFT, padx=4)
         ttk.Button(zoom_bar, text='+', style='Secondary.TButton', command=self._zoom_in, width=4).pack(side=tk.LEFT, padx=2)
-        ttk.Button(zoom_bar, text='适应窗口', style='Ghost.TButton', command=self._zoom_reset).pack(side=tk.LEFT, padx=10)
+        ttk.Button(zoom_bar, text=t('zoom_fit'), style='Ghost.TButton', command=self._zoom_reset).pack(side=tk.LEFT, padx=10)
         self.canvas.bind('<MouseWheel>', self._on_mousewheel)
         self._draw_large()
 
     def _draw_large(self) -> None:
         self.canvas.delete('all')
-        size = max(2, int(self.cell_size * self.zoom))
+        size = max(4.0, self.cell_size * self.zoom)
         self._actual_cs = size
         for row in range(self.game.rows):
             for col in range(self.game.cols):
@@ -308,21 +353,32 @@ class GameFrame(tk.Frame):
                 x2, y2 = x1 + size - 2, y1 + size - 2
                 center_x, center_y = x1 + max(size - 2, 0) // 2, y1 + max(size - 2, 0) // 2
                 if self.game.revealed[row][col]:
-                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=COLORS['surface_alt'], outline='')
+                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=BOARD_COLORS['open'], outline='')
                     value = self.game.board[row][col]
                     if value == -1 and size >= 10:
-                        self.canvas.create_text(center_x, center_y, text='✹', font=('Arial', max(8, size // 2)), fill=COLORS['danger'])
+                        self.canvas.create_text(center_x, center_y, text='✖', font=('Arial', max(8, int(size // 2))), fill=COLORS['danger'])
                     elif value > 0 and size >= 10:
-                        self.canvas.create_text(center_x, center_y, text=str(value), font=('Arial', max(8, size // 2), 'bold'), fill=NUM_COLORS.get(value, COLORS['text']))
+                        self.canvas.create_text(center_x, center_y, text=str(value), font=('Arial', max(8, int(size // 2)), 'bold'), fill=NUM_COLORS.get(value, COLORS['text']))
                 elif self.game.flagged[row][col]:
-                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=self._gradient(row, col), outline='')
+                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=BOARD_COLORS['flag'], outline=COLORS['warning'])
                     if size >= 12:
-                        self.canvas.create_text(center_x, center_y, text='⚑', font=('Arial', max(8, size // 2)), fill=COLORS['danger'])
+                        self.canvas.create_text(center_x, center_y, text='⚑', font=('Arial', max(8, int(size // 2))), fill=COLORS['warning'])
                 else:
-                    self.canvas.create_rectangle(x1, y1, x2, y2, fill=self._gradient(row, col), outline='')
+                    self.canvas.create_rectangle(
+                        x1, y1, x2, y2,
+                        fill=self._closed_color(row, col), outline='',
+                    )
         width, height = self.game.cols * size, self.game.rows * size
-        self.canvas.configure(width=width, height=height)
-        self.scroll_canvas.configure(scrollregion=(0, 0, width, height))
+        canvas_width, canvas_height = int(round(width)), int(round(height))
+        self.canvas.configure(width=canvas_width, height=canvas_height)
+        viewport_width = max(1, self.scroll_canvas.winfo_width())
+        viewport_height = max(1, self.scroll_canvas.winfo_height())
+        origin_x = max(0, (viewport_width - canvas_width) // 2)
+        origin_y = max(0, (viewport_height - canvas_height) // 2)
+        self.scroll_canvas.coords(self._canvas_window, origin_x, origin_y)
+        self.scroll_canvas.configure(scrollregion=(
+            0, 0, max(viewport_width, canvas_width), max(viewport_height, canvas_height),
+        ))
 
     def _zoom_in(self):
         self.zoom = min(3.0, self.zoom + 0.25)
@@ -335,9 +391,52 @@ class GameFrame(tk.Frame):
         self._draw_large()
 
     def _zoom_reset(self):
-        self.zoom = 1.0
-        self.zoom_label.configure(text='100%')
+        self._zoom_fit()
+
+    def _zoom_fit(self):
+        self.update_idletasks()
+        self.zoom = calculate_fit_zoom(
+            max(1, self.scroll_canvas.winfo_width() - 8),
+            max(1, self.scroll_canvas.winfo_height() - 8),
+            self.game.rows,
+            self.game.cols,
+            self.cell_size,
+        )
+        self.zoom_label.configure(text=f'{int(self.zoom * 100)}%')
         self._draw_large()
+
+    def _viewport_resized(self, event):
+        if not self._auto_fit_pending or event.width <= 1 or event.height <= 1:
+            return
+        if self._fit_after_id is not None:
+            self.after_cancel(self._fit_after_id)
+        self._fit_after_id = self.after(40, self._finish_initial_fit)
+
+    def _finish_initial_fit(self):
+        self._fit_after_id = None
+        self._auto_fit_pending = False
+        self._zoom_fit()
+
+    def _hover_move(self, event):
+        row, col = self._get_cell(event.x, event.y)
+        cell = None if row is None else (row, col)
+        if cell == self._hover_cell:
+            return
+        self._hover_cell = cell
+        self.canvas.delete('hover')
+        if cell is None or self.game.game_over or self.game.game_won:
+            return
+        size = getattr(self, '_actual_cs', self.cell_size)
+        x1, y1 = col * size + 1, row * size + 1
+        x2, y2 = x1 + size - 2, y1 + size - 2
+        self.canvas.create_rectangle(
+            x1, y1, x2, y2,
+            outline=BOARD_COLORS['hover'], width=2, tags='hover',
+        )
+
+    def _hover_leave(self, _event=None):
+        self._hover_cell = None
+        self.canvas.delete('hover')
 
     def _on_mousewheel(self, event):
         if event.state & 0x4:
@@ -427,18 +526,31 @@ class GameFrame(tk.Frame):
     def _on_win(self):
         save_ranking(self.user['id'], self.difficulty, self.timer_seconds)
         minutes, seconds = divmod(self.timer_seconds, 60)
-        messagebox.showinfo(t('win_title'), t('win_msg', self.cfg['title'], f'{minutes:02d}:{seconds:02d}'), parent=self)
+        messagebox.showinfo(t('win_title'), t('win_msg', self.difficulty_title, f'{minutes:02d}:{seconds:02d}'), parent=self)
         threading.Thread(target=_gitee_append_ranking, args=(self.user['username'], self.difficulty, self.timer_seconds), daemon=True).start()
 
     def _back(self):
         self._stop_timer()
+        if self._fit_after_id is not None:
+            self.after_cancel(self._fit_after_id)
+            self._fit_after_id = None
         self.on_back()
+
+    def destroy(self):
+        self._stop_timer()
+        if self._fit_after_id is not None:
+            try:
+                self.after_cancel(self._fit_after_id)
+            except tk.TclError:
+                pass
+            self._fit_after_id = None
+        super().destroy()
 
     def restart(self):
         self._stop_timer()
         self.timer_seconds = 0
         self.timer_label.configure(text='00:00')
         self.game = MinesweeperGame(self.difficulty)
-        self._gradient_start, self._gradient_end = _pastel_pair()
+        self._hover_cell = None
         self._redraw()
         self._update_mine_label()
