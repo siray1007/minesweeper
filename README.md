@@ -1,26 +1,24 @@
-# 🎮 扫雷
+# 扫雷
 
-经典扫雷 + 云端排行榜 + 9语言支持
+深色赛博风桌面扫雷客户端。保留经典扫雷规则，同时加入账号登录、本地战绩、云端排行榜和大棋盘缩放。
 
 ## 功能
-- 💣 三种难度：9×9 (10雷) / 27×27 (100雷) / 81×81 (800雷)
-- 🌐 9语言：简体/繁體/文言文/English/日本語/한국어/Français/Deutsch/Русский
-- 🏆 Gitee云端排行榜：全球玩家实时竞技
-- 🎨 暗色主题 + 每局随机渐变棋盘
-- 🖱️ 双击Chord自动展开
-- ⌨️ 右键插旗
-- 📐 窗口自适应缩放
 
-## 下载
-👉 [最新Release](https://github.com/siray1007/minesweeper/releases)
-
-下载 `扫雷.exe`，双击即玩（Windows，无需Python）
+- 三种战场：9x9 / 27x27 / 81x81
+- 登录与注册：SQLite 本地保存账号
+- 排行榜：本地记录优先，云端可用时自动合并
+- 大棋盘：81x81 支持滚动与缩放
+- 双语界面：简体中文 / English
+- 深色硬朗 UI：更大的窗口、更清晰的战情室大厅、更强的竞技感
 
 ## 运行源码
+
 ```bash
-pip install pillow
 python main.py
 ```
 
+也可以双击 `run.bat` 启动。
+
 ## 技术栈
-Python + tkinter + SQLite + Gitee API
+
+Python + Tkinter + SQLite + Gitee API

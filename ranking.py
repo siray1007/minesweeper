@@ -4,9 +4,9 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from database import get_rankings_local, _gitee_fetch_rankings
+from database import _gitee_fetch_rankings, get_rankings_local
 from lang import t
-from ui_theme import COLORS, FONT, configure_ttk
+from ui_theme import COLORS, FONT, LAYOUT, configure_ttk, section_title
 
 
 class RankingFrame(tk.Frame):
@@ -17,27 +17,30 @@ class RankingFrame(tk.Frame):
         self.on_back = on_back
         self._trees: dict[str, ttk.Treeview] = {}
         self._cloud_idx = 0
+        self._cloud_job = None
         self._build_ui()
         self._cloud_job = self.after(250, self._fetch_cloud_step)
 
     def _build_ui(self) -> None:
-        bar = tk.Frame(self, bg=COLORS['surface'], height=64)
+        width, height, min_width, min_height = LAYOUT['ranking']['window']
+        self.winfo_toplevel().geometry(f'{width}x{height}')
+        self.winfo_toplevel().minsize(min_width, min_height)
+
+        bar = tk.Frame(self, bg=COLORS['surface'], height=74)
         bar.pack(fill=tk.X)
         bar.pack_propagate(False)
         ttk.Button(bar, text=t('btn_back'), style='Ghost.TButton', command=self._back).pack(
-            side=tk.LEFT, padx=18, pady=12)
-        tk.Label(
-            bar, text=t('rank_title'), font=(FONT, 19, 'bold'),
-            bg=COLORS['surface'], fg=COLORS['text'],
-        ).pack(side=tk.LEFT, padx=10)
-        tk.Label(
-            bar, text=t('current_user', self.current_user['username']),
-            font=(FONT, 9), bg=COLORS['surface'], fg=COLORS['muted'],
-        ).pack(side=tk.RIGHT, padx=22)
+            side=tk.LEFT, padx=18, pady=14)
+        title_block = tk.Frame(bar, bg=COLORS['surface'])
+        title_block.pack(side=tk.LEFT, padx=8)
+        section_title(title_block, t('rank_title'), t('current_user', self.current_user['username'])).pack(anchor='w')
 
         self.status_label = tk.Label(
-            self, text='本地记录已加载 · 云端同步中…', font=(FONT, 9),
-            bg=COLORS['bg'], fg=COLORS['subtle'], anchor='w',
+            self, text=t('rank_syncing'),
+            font=(FONT, 9),
+            bg=COLORS['bg'],
+            fg=COLORS['subtle'],
+            anchor='w',
         )
         self.status_label.pack(fill=tk.X, padx=24, pady=(14, 0))
 
@@ -64,7 +67,7 @@ class RankingFrame(tk.Frame):
     def _dedup_best(rankings: list[dict]) -> list[dict]:
         best = {}
         for record in rankings:
-            username = record.get('username', '—')
+            username = record.get('username', 'unknown')
             seconds = int(record.get('time_seconds', 99999))
             if username not in best or seconds < best[username].get('time_seconds', 99999):
                 best[username] = record
@@ -79,7 +82,7 @@ class RankingFrame(tk.Frame):
             ('rank', t('rank_col'), 72),
             ('username', t('user_col'), 180),
             ('time', t('time_col'), 140),
-            ('date', t('date_col'), 230),
+            ('date', t('date_col'), 260),
         ):
             table.heading(column, text=title)
             table.column(column, width=width, anchor='center', stretch=True)
@@ -95,15 +98,15 @@ class RankingFrame(tk.Frame):
         for item in table.get_children():
             table.delete(item)
         if not rankings:
-            table.insert('', tk.END, values=('—', t('no_data'), '—', '—'))
+            table.insert('', tk.END, values=('--', t('no_data'), '--', '--'))
             return
         for rank, record in enumerate(rankings, 1):
             minutes, seconds = divmod(int(record.get('time_seconds', 0)), 60)
-            date = record.get('completed_at') or record.get('created_at', '—')
+            date = record.get('completed_at') or record.get('created_at', '--')
             tags = ('me',) if record.get('username') == self.current_user.get('username') else ()
             table.insert(
                 '', tk.END,
-                values=(rank, record.get('username', '—'), f'{minutes:02d}:{seconds:02d}', date),
+                values=(rank, record.get('username', 'unknown'), f'{minutes:02d}:{seconds:02d}', date),
                 tags=tags,
             )
 
@@ -130,12 +133,13 @@ class RankingFrame(tk.Frame):
             for record in get_rankings_local(difficulty):
                 if record.get('username') == self.current_user.get('username'):
                     records.append((
-                        labels[difficulty], int(record.get('time_seconds', 0)),
-                        record.get('completed_at') or record.get('created_at', '—'),
+                        labels[difficulty],
+                        int(record.get('time_seconds', 0)),
+                        record.get('completed_at') or record.get('created_at', '--'),
                     ))
         records.sort(key=lambda item: item[1])
         if not records:
-            table.insert('', tk.END, values=('—', t('no_records'), '—'))
+            table.insert('', tk.END, values=('--', t('no_records'), '--'))
             return
         for label, total_seconds, date in records:
             minutes, seconds = divmod(total_seconds, 60)
@@ -144,7 +148,7 @@ class RankingFrame(tk.Frame):
     def _fetch_cloud_step(self) -> None:
         labels = self._difficulty_labels()
         if self._cloud_idx >= len(labels):
-            self.status_label.configure(text='本地记录已加载 · 云端同步完成')
+            self.status_label.configure(text=t('rank_synced'))
             return
         difficulty = labels[self._cloud_idx][0]
         self._cloud_idx += 1
@@ -161,6 +165,6 @@ class RankingFrame(tk.Frame):
         self._cloud_job = self.after(350, self._fetch_cloud_step)
 
     def _back(self) -> None:
-        if getattr(self, '_cloud_job', None):
+        if self._cloud_job:
             self.after_cancel(self._cloud_job)
         self.on_back()

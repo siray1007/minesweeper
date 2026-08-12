@@ -1,10 +1,18 @@
 import random
 import unittest
 
-from game import MinesweeperGame
+from game import MinesweeperGame, calculate_fit_zoom
 
 
 class MinesweeperGameTests(unittest.TestCase):
+    def test_fit_zoom_uses_both_viewport_dimensions(self):
+        self.assertEqual(calculate_fit_zoom(1000, 600, 81, 81, 16), 0.46)
+        self.assertEqual(calculate_fit_zoom(600, 1000, 81, 81, 16), 0.46)
+
+    def test_fit_zoom_stays_inside_supported_range(self):
+        self.assertEqual(calculate_fit_zoom(100, 100, 81, 81, 16), 0.25)
+        self.assertEqual(calculate_fit_zoom(8000, 8000, 9, 9, 16), 3.0)
+
     def test_rejects_unknown_difficulty(self):
         with self.assertRaises(ValueError):
             MinesweeperGame('custom')
