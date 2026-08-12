@@ -32,7 +32,9 @@ jobs:
 
       - name: Build exe
         shell: powershell
-        run: .\build_release.ps1
+        run: |
+          .\build_release.ps1
+          Copy-Item -LiteralPath '.\扫雷.exe' -Destination '.\CyberMinesweeper.exe' -Force
 
       - name: Generate tag
         shell: bash
@@ -48,6 +50,6 @@ jobs:
           tag_name: ${{ env.TAG }}
           name: "扫雷游戏 ${{ env.TAG }}"
           generate_release_notes: true
-          files: 扫雷.exe
+          files: CyberMinesweeper.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
