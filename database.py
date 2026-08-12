@@ -54,7 +54,20 @@ def init_db():
         completed_at TEXT NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users (id))"""
     )
+    c.execute(
+        """CREATE TABLE IF NOT EXISTS matches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        difficulty TEXT NOT NULL,
+        result TEXT NOT NULL,
+        time_seconds INTEGER,
+        completed_at TEXT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users (id))"""
+    )
+    c.execute("CREATE INDEX IF NOT EXISTS idx_matches_user_completed ON matches (user_id, completed_at DESC)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_matches_user_difficulty ON matches (user_id, difficulty)")
     conn.commit()
+    _seed_match_history(conn)
     conn.close()
 
 
@@ -137,6 +150,17 @@ def save_ranking(user_id: int, difficulty: str, time_seconds: int, username: str
         _gitee_append_ranking(username, difficulty, time_seconds)
 
 
+def save_match_result(user_id: int, difficulty: str, result: str, time_seconds: int | None = None) -> None:
+    conn = get_db()
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO matches (user_id, difficulty, result, time_seconds, completed_at) VALUES (?, ?, ?, ?, ?)",
+        (user_id, difficulty, result, time_seconds, datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+    )
+    conn.commit()
+    conn.close()
+
+
 def get_rankings_local(difficulty: str, limit: int = 50) -> list:
     conn = get_db()
     c = conn.cursor()
@@ -149,6 +173,88 @@ def get_rankings_local(difficulty: str, limit: int = 50) -> list:
     results = [dict(row) for row in c.fetchall()]
     conn.close()
     return results
+
+
+def get_user_profile_summary(user_id: int) -> dict:
+    conn = get_db()
+    c = conn.cursor()
+    c.execute(
+        """SELECT
+            COUNT(*) AS total_matches,
+            COALESCE(SUM(CASE WHEN result = 'win' THEN 1 ELSE 0 END), 0) AS wins,
+            COALESCE(SUM(CASE WHEN result = 'game_over' THEN 1 ELSE 0 END), 0) AS losses
+        FROM matches
+        WHERE user_id = ?""",
+        (user_id,),
+    )
+    totals = dict(c.fetchone() or {})
+
+    c.execute(
+        """SELECT difficulty, MIN(time_seconds) AS best_seconds
+        FROM rankings
+        WHERE user_id = ?
+        GROUP BY difficulty""",
+        (user_id,),
+    )
+    best_by_difficulty = {}
+    for row in c.fetchall():
+        row = dict(row)
+        best_by_difficulty[row["difficulty"]] = row["best_seconds"]
+
+    c.execute(
+        """SELECT difficulty, COUNT(*) AS runs
+        FROM matches
+        WHERE user_id = ?
+        GROUP BY difficulty""",
+        (user_id,),
+    )
+    run_counts = {}
+    for row in c.fetchall():
+        row = dict(row)
+        run_counts[row["difficulty"]] = row["runs"]
+
+    c.execute(
+        """SELECT difficulty, result, time_seconds, completed_at
+        FROM matches
+        WHERE user_id = ?
+        ORDER BY completed_at DESC, id DESC
+        LIMIT 5""",
+        (user_id,),
+    )
+    recent_matches = [dict(row) for row in c.fetchall()]
+    conn.close()
+
+    total_matches = int(totals.get("total_matches") or 0)
+    wins = int(totals.get("wins") or 0)
+    losses = int(totals.get("losses") or 0)
+    win_rate = int(round(wins / total_matches * 100)) if total_matches else 0
+    return {
+        "total_matches": total_matches,
+        "wins": wins,
+        "losses": losses,
+        "win_rate": win_rate,
+        "best_by_difficulty": best_by_difficulty,
+        "run_counts": run_counts,
+        "recent_matches": recent_matches,
+    }
+
+
+def _seed_match_history(conn) -> None:
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) AS total FROM matches")
+    row = c.fetchone()
+    if row and int(row["total"] or 0) > 0:
+        return
+    c.execute("SELECT COUNT(*) AS total FROM rankings")
+    row = c.fetchone()
+    if not row or int(row["total"] or 0) == 0:
+        return
+    c.execute(
+        """INSERT INTO matches (user_id, difficulty, result, time_seconds, completed_at)
+        SELECT user_id, difficulty, 'win', time_seconds, completed_at
+        FROM rankings"""
+    )
+    conn.commit()
 
 
 def get_rankings(difficulty: str, limit: int = 50) -> list:

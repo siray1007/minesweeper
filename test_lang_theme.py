@@ -13,6 +13,9 @@ class LanguageThemeTests(unittest.TestCase):
             "auth_kicker", "auth_status", "menu_subtitle", "mine_density", "mine_count_label", "quick_controls",
             "board_status_ready", "rank_empty_marker", "clearance_label", "flags_label",
             "best_label", "ops_label", "btn_lobby", "btn_result_records", "result_summary",
+            "profile_subtitle", "profile_total_matches", "profile_wins", "profile_losses",
+            "profile_win_rate", "profile_recent_title", "profile_no_recent",
+            "profile_switch_account", "match_win", "match_fail",
         }
         for lang, mapping in TEXTS.items():
             self.assertTrue(required.issubset(mapping), lang)
