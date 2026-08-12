@@ -1,10 +1,14 @@
-# 数据库（含用户数据，不提交）
+# 本地账号与战绩数据
 minesweeper.db
+minesweeper.db-shm
+minesweeper.db-wal
 
-# 打包产物（只作为 Release 附件，不进仓库）
+# 正式发布产物
 扫雷.exe
 
-# PyInstaller 构建
+# PyInstaller 构建目录
+build/
+dist/
 build_temp/
 *.spec
 
@@ -12,7 +16,7 @@ build_temp/
 __pycache__/
 *.pyc
 
-# 系统
+# 系统文件
 Thumbs.db
 /.worktrees/
 /worktrees/
