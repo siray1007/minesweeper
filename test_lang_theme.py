@@ -1,7 +1,7 @@
 import unittest
 
 from lang import LANG_OPTIONS, TEXTS
-from ui_theme import COLORS, draw_grid_background, make_panel, metric_label
+from ui_theme import COLORS, LAYOUT, draw_grid_background, make_panel, metric_label, section_title
 
 
 class LanguageThemeTests(unittest.TestCase):
@@ -36,6 +36,9 @@ class LanguageThemeTests(unittest.TestCase):
         self.assertTrue(callable(make_panel))
         self.assertTrue(callable(metric_label))
         self.assertTrue(callable(draw_grid_background))
+        self.assertTrue(callable(section_title))
+        self.assertGreaterEqual(LAYOUT["lobby"][0], 1280)
+        self.assertGreaterEqual(LAYOUT["profile"][0], 1000)
 
 
 if __name__ == "__main__":

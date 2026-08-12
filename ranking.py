@@ -6,7 +6,7 @@ from tkinter import ttk
 
 from database import _gitee_fetch_rankings, get_rankings_local
 from lang import t
-from ui_theme import COLORS, FONT, FONT_MONO, CyberButton, configure_ttk, install_backdrop, make_panel
+from ui_theme import COLORS, FONT, FONT_MONO, LAYOUT, CyberButton, configure_ttk, install_backdrop, make_panel, section_title
 
 
 def format_duration(seconds: int | None) -> str:
@@ -25,51 +25,49 @@ class RankingFrame(tk.Frame):
         self.on_back = on_back
         self._trees: dict[str, ttk.Treeview] = {}
         self._cloud_idx = 0
+        root = self.winfo_toplevel()
+        root.geometry(f"{LAYOUT['ranking'][0]}x{LAYOUT['ranking'][1]}")
+        root.minsize(LAYOUT["ranking"][2], LAYOUT["ranking"][3])
         self._build_ui()
         self._cloud_job = self.after(250, self._fetch_cloud_step)
 
     def _build_ui(self) -> None:
         bar_outer, bar = make_panel(self, bg=COLORS["surface"], border=COLORS["border_hot"])
-        bar_outer.pack(fill=tk.X, padx=16, pady=(16, 0))
-        bar.configure(height=74)
+        bar_outer.pack(fill=tk.X, padx=28, pady=(24, 0))
+        bar.configure(height=108)
         bar.pack_propagate(False)
-        CyberButton(bar, text=t("btn_back"), variant="secondary", command=self._back).pack(
-            side=tk.LEFT, padx=18, pady=12
-        )
-        title_stack = tk.Frame(bar, bg=COLORS["surface"])
-        title_stack.pack(side=tk.LEFT, padx=10, pady=12)
-        tk.Label(
-            title_stack, text=t("rank_title"), font=(FONT, 20, "bold"), bg=COLORS["surface"], fg=COLORS["text"]
-        ).pack(anchor="w")
-        tk.Label(
-            title_stack,
-            text=t("rank_subtitle"),
-            font=(FONT_MONO, 8),
+        CyberButton(bar, text=t("btn_back"), variant="secondary", command=self._back).pack(side=tk.LEFT, padx=20, pady=24)
+        title_stack = section_title(
+            bar,
+            "RECORDS // SYSTEM",
+            t("rank_title"),
+            t("rank_subtitle"),
+            accent=COLORS["primary"],
             bg=COLORS["surface"],
-            fg=COLORS["muted"],
-        ).pack(anchor="w", pady=(4, 0))
+        )
+        title_stack.pack(side=tk.LEFT, padx=8, pady=16, fill=tk.X, expand=True)
         tk.Label(
             bar,
             text=t("current_user", self.current_user["username"]),
-            font=(FONT_MONO, 9, "bold"),
+            font=(FONT_MONO, 10, "bold"),
             bg=COLORS["surface"],
             fg=COLORS["primary"],
-        ).pack(side=tk.RIGHT, padx=22)
+        ).pack(side=tk.RIGHT, padx=22, pady=24)
 
         self.status_label = tk.Label(
             self,
             text=t("status_local_loaded"),
-            font=(FONT, 9),
+            font=(FONT, 10),
             bg=COLORS["bg"],
             fg=COLORS["subtle"],
             anchor="w",
         )
-        self.status_label.pack(fill=tk.X, padx=24, pady=(14, 0))
+        self.status_label.pack(fill=tk.X, padx=30, pady=(16, 0))
 
         self._build_personal_summary()
 
         notebook = ttk.Notebook(self, style="App.TNotebook")
-        notebook.pack(fill=tk.BOTH, expand=True, padx=20, pady=14)
+        notebook.pack(fill=tk.BOTH, expand=True, padx=28, pady=18)
         for difficulty, label in self._difficulty_labels():
             frame = tk.Frame(notebook, bg=COLORS["surface"])
             notebook.add(frame, text=label)
@@ -89,23 +87,23 @@ class RankingFrame(tk.Frame):
 
     def _build_personal_summary(self) -> None:
         outer, inner = make_panel(self, bg=COLORS["surface"], border=COLORS["border"])
-        outer.pack(fill=tk.X, padx=20, pady=(12, 0))
+        outer.pack(fill=tk.X, padx=28, pady=(14, 0))
         tk.Label(
             inner,
             text=t("personal_best_title"),
             font=(FONT_MONO, 9, "bold"),
             bg=COLORS["surface"],
             fg=COLORS["primary"],
-        ).pack(side=tk.LEFT, padx=(16, 18), pady=12)
+        ).pack(side=tk.LEFT, padx=(20, 18), pady=16)
         for difficulty, label in self._difficulty_labels():
             best = self._best_for_user(difficulty)
             block = tk.Frame(inner, bg=COLORS["surface"])
-            block.pack(side=tk.LEFT, expand=True, fill=tk.X, pady=10)
-            tk.Label(block, text=label, font=(FONT, 8), bg=COLORS["surface"], fg=COLORS["subtle"]).pack(anchor="w")
+            block.pack(side=tk.LEFT, expand=True, fill=tk.X, pady=14)
+            tk.Label(block, text=label, font=(FONT, 9), bg=COLORS["surface"], fg=COLORS["subtle"]).pack(anchor="w")
             tk.Label(
                 block,
                 text=format_duration(best),
-                font=(FONT_MONO, 12, "bold"),
+                font=(FONT_MONO, 15, "bold"),
                 bg=COLORS["surface"],
                 fg=COLORS["text"] if best is not None else COLORS["disabled"],
             ).pack(anchor="w")

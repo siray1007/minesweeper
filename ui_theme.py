@@ -38,6 +38,16 @@ COLORS = {
 FONT = "Microsoft YaHei UI"
 FONT_MONO = "Consolas"
 
+LAYOUT = {
+    "auth": (720, 820, 560, 680),
+    "lobby": (1360, 860, 1120, 720),
+    "game_easy": (980, 840, 760, 700),
+    "game_medium": (1180, 880, 920, 740),
+    "game_hard": (1440, 920, 1040, 760),
+    "ranking": (1280, 820, 1040, 700),
+    "profile": (1120, 820, 980, 720),
+}
+
 
 class CyberButton(tk.Button):
     """A hard-edged Tk button that does not inherit platform ttk softness."""
@@ -234,19 +244,36 @@ def make_panel(parent: tk.Misc, *, bg: str | None = None, border: str | None = N
     return outer, inner
 
 
-def metric_label(parent: tk.Misc, label: str, value: str, *, accent: str | None = None) -> tk.Frame:
+def metric_label(
+    parent: tk.Misc, label: str, value: str, *, accent: str | None = None, bg: str | None = None
+) -> tk.Frame:
     """Small terminal-style metric block."""
-    frame = tk.Frame(parent, bg=COLORS["surface"])
-    tk.Label(frame, text=label.upper(), font=(FONT_MONO, 8), bg=COLORS["surface"], fg=COLORS["subtle"]).pack(
+    fill = bg or COLORS["surface"]
+    frame = tk.Frame(parent, bg=fill)
+    tk.Label(frame, text=label.upper(), font=(FONT_MONO, 8), bg=fill, fg=COLORS["subtle"]).pack(
         anchor="w"
     )
     tk.Label(
         frame,
         text=value,
         font=(FONT_MONO, 13, "bold"),
-        bg=COLORS["surface"],
+        bg=fill,
         fg=accent or COLORS["text"],
     ).pack(anchor="w", pady=(2, 0))
+    return frame
+
+
+def section_title(
+    parent: tk.Misc, kicker: str, title: str, subtitle: str, *, accent: str | None = None, bg: str | None = None
+) -> tk.Frame:
+    """Large cyber title stack used by command-deck screens."""
+    fill = bg or COLORS["surface"]
+    glow = accent or COLORS["primary"]
+    frame = tk.Frame(parent, bg=fill)
+    tk.Label(frame, text=kicker, font=(FONT_MONO, 10, "bold"), bg=fill, fg=glow).pack(anchor="w")
+    tk.Label(frame, text=title, font=(FONT, 30, "bold"), bg=fill, fg=COLORS["text"]).pack(anchor="w", pady=(4, 0))
+    tk.Frame(frame, bg=glow, height=2).pack(fill=tk.X, pady=(10, 9))
+    tk.Label(frame, text=subtitle, font=(FONT, 11), bg=fill, fg=COLORS["muted"]).pack(anchor="w")
     return frame
 
 

@@ -13,6 +13,7 @@ from ui_theme import (
     COLORS,
     FONT,
     FONT_MONO,
+    LAYOUT,
     CyberButton,
     configure_ttk,
     install_backdrop,
@@ -205,11 +206,11 @@ class GameFrame(tk.Frame):
     def _apply_window_size(self) -> None:
         root = self.winfo_toplevel()
         if self.difficulty == "81x81":
-            set_window_geometry(root, 1160, 800, 860, 620)
+            set_window_geometry(root, *LAYOUT["game_hard"])
         elif self.difficulty == "27x27":
-            set_window_geometry(root, 920, 780, 760, 640)
+            set_window_geometry(root, *LAYOUT["game_medium"])
         else:
-            set_window_geometry(root, 760, 760, 620, 620)
+            set_window_geometry(root, *LAYOUT["game_easy"])
         root.title(f"{t('title')} · {self.cfg['title']} · {self.user['username']}")
 
     def _build_ui(self) -> None:

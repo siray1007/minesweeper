@@ -29,6 +29,8 @@ class MainFlowTests(unittest.TestCase):
             self.assertEqual(app.current_user["username"], "CyberPilot")
             self.assertIsInstance(app.current_frame, tk.Frame)
             self.assertIn("CyberPilot", str(app.current_user))
+            self.assertGreaterEqual(app.root.winfo_width(), 1320)
+            self.assertGreaterEqual(app.root.winfo_height(), 840)
         finally:
             app.root.destroy()
 
@@ -72,6 +74,17 @@ class MainFlowTests(unittest.TestCase):
 
             self.assertIsNone(app.current_user)
             self.assertIsInstance(app.current_frame, AuthFrame)
+        finally:
+            app.root.destroy()
+
+    def test_ranking_opens_at_larger_scale(self):
+        app = MainApp(start_loop=False)
+        try:
+            app._show_ranking()
+            app.root.update()
+
+            self.assertGreaterEqual(app.root.winfo_width(), 1260)
+            self.assertGreaterEqual(app.root.winfo_height(), 800)
         finally:
             app.root.destroy()
 
