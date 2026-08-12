@@ -7,7 +7,7 @@ from tkinter import messagebox
 
 from database import get_or_create_local_user, login_user, register_user
 from lang import LANG_OPTIONS, get_lang, save_lang, t
-from ui_theme import COLORS, FONT, FONT_MONO, CyberButton, configure_ttk, install_backdrop, load_photo, make_entry, make_panel
+from ui_theme import COLORS, FONT, FONT_MONO, LAYOUT, CyberButton, configure_ttk, install_backdrop, load_photo, make_entry, make_panel
 
 
 _ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bomb32.png")
@@ -37,7 +37,7 @@ class AuthFrame(tk.Frame):
 
     def _language_selector(self) -> None:
         container = tk.Frame(self, bg=COLORS["bg"])
-        container.place(x=22, y=18)
+        container.place(x=28, y=24)
 
         tk.Label(container, text=t("language"), font=(FONT, 9), bg=COLORS["bg"], fg=COLORS["muted"]).pack(
             side=tk.LEFT, padx=(0, 8)
@@ -74,7 +74,7 @@ class AuthFrame(tk.Frame):
 
     def _create_card(self, height: int) -> tuple[tk.Frame, tk.Frame]:
         card, inner = make_panel(self, bg=COLORS["surface"], border=COLORS["border_hot"])
-        card.place(relx=0.5, rely=0.53, anchor="center", width=440, height=height)
+        card.place(relx=0.5, rely=0.54, anchor="center", width=LAYOUT["auth"][0] - 180, height=height)
         self._auth_card = card
         return card, inner
 
@@ -82,7 +82,7 @@ class AuthFrame(tk.Frame):
         tk.Label(
             parent,
             text=t("auth_kicker"),
-            font=(FONT_MONO, 9, "bold"),
+            font=(FONT_MONO, 10, "bold"),
             bg=COLORS["surface"],
             fg=COLORS["primary"],
         ).pack(pady=(20, 6))
@@ -91,16 +91,16 @@ class AuthFrame(tk.Frame):
             self._icon_image = image
             tk.Label(parent, image=image, bg=COLORS["surface"]).pack(pady=(0, 6))
         else:
-            tk.Label(parent, text="MINE", font=(FONT, 13, "bold"), bg=COLORS["surface"], fg=COLORS["primary"]).pack(
+            tk.Label(parent, text="MINE", font=(FONT, 15, "bold"), bg=COLORS["surface"], fg=COLORS["primary"]).pack(
                 pady=(0, 6)
             )
 
-        tk.Label(parent, text=t("title"), font=(FONT, 27, "bold"), bg=COLORS["surface"], fg=COLORS["text"]).pack()
-        tk.Frame(parent, bg=COLORS["primary"], height=2).pack(fill=tk.X, padx=92, pady=(10, 10))
-        tk.Label(parent, text=subtitle, font=(FONT, 12), bg=COLORS["surface"], fg=COLORS["muted"]).pack(
+        tk.Label(parent, text=t("title"), font=(FONT, 31, "bold"), bg=COLORS["surface"], fg=COLORS["text"]).pack()
+        tk.Frame(parent, bg=COLORS["primary"], height=2).pack(fill=tk.X, padx=112, pady=(10, 10))
+        tk.Label(parent, text=subtitle, font=(FONT, 13), bg=COLORS["surface"], fg=COLORS["muted"]).pack(
             pady=(0, 8)
         )
-        tk.Label(parent, text=t("auth_status"), font=(FONT_MONO, 8), bg=COLORS["surface"], fg=COLORS["subtle"]).pack(
+        tk.Label(parent, text=t("auth_status"), font=(FONT_MONO, 9), bg=COLORS["surface"], fg=COLORS["subtle"]).pack(
             pady=(0, 18)
         )
 
@@ -116,11 +116,11 @@ class AuthFrame(tk.Frame):
         self._mode = "login"
         self._clear()
         self._language_selector()
-        _, card = self._create_card(590)
+        _, card = self._create_card(650)
         self._header(card, t("login"))
 
         form = tk.Frame(card, bg=COLORS["surface"])
-        form.pack(fill=tk.X, padx=50)
+        form.pack(fill=tk.X, padx=58)
         self._user = self._field(form, t("username"))
         self._pwd = self._field(form, t("password"), show="*")
 
@@ -145,11 +145,11 @@ class AuthFrame(tk.Frame):
         self._mode = "register"
         self._clear()
         self._language_selector()
-        _, card = self._create_card(628)
+        _, card = self._create_card(688)
         self._header(card, t("register"))
 
         form = tk.Frame(card, bg=COLORS["surface"])
-        form.pack(fill=tk.X, padx=50)
+        form.pack(fill=tk.X, padx=58)
         self._reg_user = self._field(form, t("username"))
         self._reg_pwd = self._field(form, t("pwd_hint"), show="*")
         self._reg_cfm = self._field(form, t("confirm_pwd"), show="*")

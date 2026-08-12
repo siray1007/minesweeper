@@ -14,12 +14,14 @@ from ui_theme import (
     COLORS,
     FONT,
     FONT_MONO,
+    LAYOUT,
     CyberButton,
     configure_ttk,
     install_backdrop,
     load_photo,
     make_panel,
     metric_label,
+    section_title,
     set_window_geometry,
 )
 
@@ -71,7 +73,7 @@ class MainApp:
     def _show_auth(self) -> None:
         self._close_profile_dialog()
         self.root.title(t("title"))
-        set_window_geometry(self.root, 620, 720, 520, 600)
+        set_window_geometry(self.root, *LAYOUT["auth"])
         self._swap(AuthFrame, self._on_login)
 
     def _on_login(self, user: dict) -> None:
@@ -81,7 +83,7 @@ class MainApp:
     def _show_menu(self) -> None:
         self._close_profile_dialog()
         self.root.title(t("menu_title"))
-        set_window_geometry(self.root, 1080, 720, 920, 620)
+        set_window_geometry(self.root, *LAYOUT["lobby"])
         if self.current_frame is not None:
             self.current_frame.destroy()
 
@@ -91,47 +93,40 @@ class MainApp:
         self.current_frame = frame
 
         header_outer, header = make_panel(frame, bg=COLORS["surface"], border=COLORS["border_hot"])
-        header_outer.pack(fill=tk.X, padx=32, pady=(24, 12))
+        header_outer.pack(fill=tk.X, padx=42, pady=(30, 16))
+        header.configure(height=116)
+        header.pack_propagate(False)
         image = load_photo(_BOMB_ICON, master=self.root)
         if image is not None:
             self._menu_icon = image
-            tk.Label(header, image=image, bg=COLORS["surface"]).pack(side=tk.LEFT, padx=(18, 14), pady=16)
+            tk.Label(header, image=image, bg=COLORS["surface"]).pack(side=tk.LEFT, padx=(22, 18), pady=24)
         title_block = tk.Frame(header, bg=COLORS["surface"])
-        title_block.pack(side=tk.LEFT, anchor="w", pady=14)
-        tk.Label(
-            title_block,
-            text="NEON_SWEEP // MINEFIELD OPS",
-            font=(FONT_MONO, 9, "bold"),
-            bg=COLORS["surface"],
-            fg=COLORS["primary"],
-        ).pack(anchor="w")
-        tk.Label(
-            title_block,
-            text=t("menu_title"),
-            font=(FONT, 24, "bold"),
-            bg=COLORS["surface"],
-            fg=COLORS["text"],
-        ).pack(anchor="w")
-        tk.Label(
-            title_block,
-            text=t("menu_subtitle"),
-            font=(FONT, 10),
-            bg=COLORS["surface"],
-            fg=COLORS["muted"],
-        ).pack(anchor="w", pady=(3, 0))
+        title_block.pack(side=tk.LEFT, anchor="w", fill=tk.X, expand=True, pady=18)
+        section_title(title_block, "NEON_SWEEP // MINEFIELD OPS", t("menu_title"), t("menu_subtitle")).pack(
+            anchor="w", fill=tk.X
+        )
         operator = tk.Frame(header, bg=COLORS["surface"])
-        operator.pack(side=tk.RIGHT, padx=(12, 18), pady=12)
+        operator.pack(side=tk.RIGHT, padx=(12, 22), pady=20)
         metric_label(operator, t("operator_label"), self.current_user["username"], accent=COLORS["primary"]).pack(
-            side=tk.LEFT, padx=(0, 20)
+            side=tk.LEFT, padx=(0, 22)
         )
         CyberButton(header, text=t("profile_label"), variant="secondary", command=self._show_profile).pack(
-            side=tk.RIGHT, anchor="n", padx=(0, 8), pady=16
+            side=tk.RIGHT, anchor="n", padx=(0, 8), pady=24
         )
 
         body = tk.Frame(frame, bg=COLORS["bg"])
-        body.pack(fill=tk.BOTH, expand=True, padx=32, pady=(18, 24))
-        body.grid_columnconfigure((0, 1, 2), weight=1, uniform="difficulty")
+        body.pack(fill=tk.BOTH, expand=True, padx=42, pady=(18, 26))
+        body.grid_columnconfigure(0, weight=0, minsize=248)
+        body.grid_columnconfigure(1, weight=1)
+        body.grid_columnconfigure(2, weight=0, minsize=248)
         body.grid_rowconfigure(0, weight=1)
+
+        self._lobby_identity_panel(body).grid(row=0, column=0, sticky="nsew", padx=(0, 18))
+
+        modules = tk.Frame(body, bg=COLORS["bg"])
+        modules.grid(row=0, column=1, sticky="nsew")
+        modules.grid_columnconfigure((0, 1, 2), weight=1, uniform="difficulty")
+        modules.grid_rowconfigure(0, weight=1)
 
         difficulties = [
             ("9x9", "TRAINING", t("diff_easy"), t("desc_easy"), COLORS["success"]),
@@ -139,41 +134,113 @@ class MainApp:
             ("81x81", "EXTREME", t("diff_hard"), t("desc_hard"), COLORS["danger"]),
         ]
         for column, (key, code, label, description, accent) in enumerate(difficulties):
-            self._difficulty_card(body, column, key, code, label, description, accent)
+            self._difficulty_card(modules, column, key, code, label, description, accent)
 
-        footer = tk.Frame(frame, bg=COLORS["bg"])
-        footer.pack(fill=tk.X, padx=32, pady=(0, 24))
+        self._lobby_status_panel(body).grid(row=0, column=2, sticky="nsew", padx=(18, 0))
+
+        footer_outer, footer = make_panel(frame, bg=COLORS["surface"], border=COLORS["border"])
+        footer_outer.pack(fill=tk.X, padx=42, pady=(0, 30))
         CyberButton(footer, text=t("btn_ranking"), variant="secondary", command=self._show_ranking).pack(
-            side=tk.LEFT
+            side=tk.LEFT, padx=16, pady=12
         )
-        status_outer, status_inner = make_panel(footer, bg=COLORS["surface"], border=COLORS["border"])
-        status_outer.pack(side=tk.RIGHT, fill=tk.X, expand=True, padx=(18, 0))
-        metric_label(status_inner, t("system_ready"), "ONLINE", accent=COLORS["success"]).pack(
-            side=tk.LEFT, padx=14, pady=8
+        metric_label(footer, t("system_ready"), "ONLINE", accent=COLORS["success"]).pack(
+            side=tk.LEFT, padx=18, pady=12
         )
         tk.Label(
-            status_inner,
+            footer,
             text=f"{t('mode_hint')}  //  {t('quick_controls')}",
             font=(FONT_MONO, 9),
             bg=COLORS["surface"],
             fg=COLORS["muted"],
-        ).pack(side=tk.RIGHT, padx=14, pady=8)
+        ).pack(side=tk.RIGHT, padx=16, pady=12)
+
+    def _lobby_identity_panel(self, parent) -> tk.Frame:
+        summary = get_user_profile_summary(self.current_user["id"])
+        outer, inner = make_panel(parent, bg=COLORS["surface"], border=COLORS["border"])
+        tk.Label(
+            inner,
+            text=t("lobby_profile_title"),
+            font=(FONT_MONO, 9, "bold"),
+            bg=COLORS["surface"],
+            fg=COLORS["primary"],
+        ).pack(anchor="w", padx=20, pady=(22, 6))
+        tk.Label(
+            inner,
+            text=self.current_user["username"],
+            font=(FONT, 21, "bold"),
+            bg=COLORS["surface"],
+            fg=COLORS["text"],
+        ).pack(anchor="w", padx=20)
+        tk.Label(
+            inner,
+            text=t("lobby_profile_subtitle"),
+            font=(FONT, 9),
+            bg=COLORS["surface"],
+            fg=COLORS["muted"],
+            wraplength=190,
+            justify="left",
+        ).pack(anchor="w", padx=20, pady=(6, 18))
+
+        for label, value, accent in (
+            (t("profile_total_matches"), str(summary["total_matches"]).zfill(2), COLORS["primary"]),
+            (t("profile_win_rate"), f"{summary['win_rate']:02d}%", COLORS["warning"]),
+            (t("profile_wins"), str(summary["wins"]).zfill(2), COLORS["success"]),
+        ):
+            metric_label(inner, label, value, accent=accent).pack(fill=tk.X, padx=20, pady=(0, 14))
+
+        CyberButton(inner, text=t("profile_label"), variant="secondary", command=self._show_profile).pack(
+            fill=tk.X, padx=20, pady=(16, 8)
+        )
+        return outer
+
+    def _lobby_status_panel(self, parent) -> tk.Frame:
+        outer, inner = make_panel(parent, bg=COLORS["surface"], border=COLORS["border"])
+        tk.Label(
+            inner,
+            text=t("lobby_status_title"),
+            font=(FONT_MONO, 9, "bold"),
+            bg=COLORS["surface"],
+            fg=COLORS["primary"],
+        ).pack(anchor="w", padx=20, pady=(22, 8))
+        status_items = [
+            ("01", t("lobby_status_scan"), COLORS["primary"]),
+            ("02", t("lobby_status_record"), COLORS["success"]),
+            ("03", t("lobby_status_control"), COLORS["warning"]),
+        ]
+        for code, text, accent in status_items:
+            row = tk.Frame(inner, bg=COLORS["surface"])
+            row.pack(fill=tk.X, padx=20, pady=(0, 14))
+            tk.Label(row, text=code, font=(FONT_MONO, 15, "bold"), bg=COLORS["surface"], fg=accent).pack(
+                side=tk.LEFT, padx=(0, 12)
+            )
+            tk.Label(row, text=text, font=(FONT, 9), bg=COLORS["surface"], fg=COLORS["muted"], wraplength=162).pack(
+                side=tk.LEFT, fill=tk.X, expand=True
+            )
+
+        tk.Frame(inner, bg=COLORS["border"], height=1).pack(fill=tk.X, padx=20, pady=(8, 16))
+        metric_label(inner, t("lobby_threat_matrix"), "ARMED", accent=COLORS["danger"]).pack(
+            fill=tk.X, padx=20, pady=(0, 14)
+        )
+        CyberButton(inner, text=t("btn_ranking"), variant="secondary", command=self._show_ranking).pack(
+            fill=tk.X, padx=20, pady=(16, 8)
+        )
+        return outer
 
     def _difficulty_card(
         self, parent, column: int, key: str, code: str, label: str, description: str, accent: str
     ) -> None:
         card, content = make_panel(parent, bg=COLORS["surface"], border=accent)
         card.grid(row=0, column=column, sticky="nsew", padx=(0 if column == 0 else 8, 8 if column < 2 else 0))
-        tk.Frame(content, bg=accent, height=4).pack(fill=tk.X)
+        tk.Frame(content, bg=accent, height=5).pack(fill=tk.X)
         content = tk.Frame(content, bg=COLORS["surface"])
-        content.pack(fill=tk.BOTH, expand=True, padx=20, pady=22)
-        tk.Label(content, text=f"MODE // {code}", font=(FONT_MONO, 9, "bold"), bg=COLORS["surface"], fg=accent).pack(
+        content.pack(fill=tk.BOTH, expand=True, padx=24, pady=28)
+        tk.Label(content, text=f"MODE // {code}", font=(FONT_MONO, 10, "bold"), bg=COLORS["surface"], fg=accent).pack(
             anchor="w"
         )
-        tk.Label(content, text=label, font=(FONT, 16, "bold"), bg=COLORS["surface"], fg=accent).pack(anchor="w")
+        tk.Label(content, text=label, font=(FONT, 19, "bold"), bg=COLORS["surface"], fg=accent).pack(anchor="w", pady=(2, 0))
         cfg = DIFFICULTY_CONFIG[key]
         metrics = tk.Frame(content, bg=COLORS["surface"])
-        metrics.pack(fill=tk.X, pady=(16, 12))
+        metrics.pack(fill=tk.X, pady=(18, 14))
         metric_label(metrics, t("grid_label"), f"{cfg['rows']}x{cfg['cols']}", accent=COLORS["text"]).pack(
             side=tk.LEFT, expand=True, fill=tk.X
         )
@@ -183,7 +250,7 @@ class MainApp:
         tk.Label(
             content,
             text=f"{t('threat_label')}: {t(threat_key(key))}  /  {t('mine_count_label')}: {cfg['mines']}",
-            font=(FONT_MONO, 10, "bold"),
+            font=(FONT_MONO, 11, "bold"),
             bg=COLORS["surface"],
             fg=accent,
         ).pack(anchor="w", pady=(2, 8))
@@ -201,17 +268,17 @@ class MainApp:
         tk.Label(
             content,
             text=description,
-            wraplength=210,
+            wraplength=250,
             justify="left",
-            font=(FONT, 9),
+            font=(FONT, 10),
             bg=COLORS["surface"],
             fg=COLORS["muted"],
-        ).pack(anchor="w")
+        ).pack(anchor="w", pady=(2, 0))
         CyberButton(
             content,
             text=t("btn_start"),
             command=lambda selected=key: self._start_game(selected),
-        ).pack(fill=tk.X, pady=(24, 0))
+        ).pack(fill=tk.X, pady=(26, 0))
 
     def _personal_stats(self, difficulty: str) -> tuple[int, int | None]:
         records = [
@@ -427,10 +494,11 @@ class MainApp:
         )
 
         dialog.update_idletasks()
-        width, height = 880, 700
+        width, height, min_width, min_height = LAYOUT["profile"]
         x = self.root.winfo_rootx() + max(0, (self.root.winfo_width() - width) // 2)
         y = self.root.winfo_rooty() + max(0, (self.root.winfo_height() - height) // 2)
         dialog.geometry(f"{width}x{height}+{x}+{y}")
+        dialog.minsize(min_width, min_height)
         dialog.grab_set()
         dialog.focus_set()
 
