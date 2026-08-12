@@ -31,6 +31,22 @@ class DatabaseAuthTests(unittest.TestCase):
 
         self.assertTrue(logged_in)
 
+    def test_login_reports_wrong_password_for_existing_account(self):
+        database.register_user('runner', ' cyber')
+
+        logged_in, message = database.login_user('runner', 'cyber')
+
+        self.assertFalse(logged_in)
+        self.assertEqual(message, database.t("login_password_wrong"))
+
+    def test_login_reports_missing_account(self):
+        database.register_user('runner', ' cyber')
+
+        logged_in, message = database.login_user('ssr', 'cyber')
+
+        self.assertFalse(logged_in)
+        self.assertEqual(message, database.t("login_user_missing"))
+
 
 if __name__ == '__main__':
     unittest.main()

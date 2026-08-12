@@ -57,5 +57,23 @@ class AuthLayoutTests(unittest.TestCase):
         self.assertEqual(get_lang(), "en")
         root.destroy()
 
+    def test_login_failure_stays_inline(self):
+        root = tk.Tk()
+        with patch('auth.os.path.exists', return_value=False):
+            frame = AuthFrame(root, lambda user: None)
+        frame.pack(fill=tk.BOTH, expand=True)
+        root.update()
+        frame._user.insert(0, "ssr")
+        frame._pwd.insert(0, "wrong")
+
+        with patch('auth.login_user', return_value=(False, "bad password")):
+            frame._do_login()
+        root.update()
+
+        self.assertEqual(frame._inline_message.cget("text"), "bad password")
+        self.assertEqual(frame._pwd.index("sel.first"), 0)
+        self.assertEqual(frame._pwd.index("sel.last"), len("wrong"))
+        root.destroy()
+
 if __name__ == '__main__':
     unittest.main()

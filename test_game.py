@@ -1,7 +1,8 @@
 import random
+import tkinter as tk
 import unittest
 
-from game import DIFFICULTY_CONFIG, MinesweeperGame, board_density, clearance_percent, flag_count
+from game import DIFFICULTY_CONFIG, GameFrame, MinesweeperGame, board_density, clearance_percent, flag_count
 
 
 class MinesweeperGameTests(unittest.TestCase):
@@ -83,6 +84,20 @@ class MinesweeperGameTests(unittest.TestCase):
         self.assertEqual(final, "win")
         self.assertTrue(game.game_won)
         self.assertEqual(game.revealed_count, game.total_safe_cells)
+
+    def test_result_panel_is_embedded(self):
+        root = tk.Tk()
+        frame = GameFrame(root, {"id": 1, "username": "ssr"}, "9x9", lambda: None)
+        frame.pack(fill=tk.BOTH, expand=True)
+        root.update()
+
+        frame._show_result_panel("game_over")
+        root.update()
+
+        self.assertIsNotNone(frame._result_panel)
+        self.assertTrue(frame._result_panel.winfo_exists())
+        self.assertIs(frame._result_panel.winfo_toplevel(), root)
+        root.destroy()
 
 
 if __name__ == "__main__":

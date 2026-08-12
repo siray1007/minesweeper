@@ -5,7 +5,6 @@ import os
 import queue
 import threading
 import tkinter as tk
-from tkinter import messagebox
 
 from auth import AuthFrame
 from database import cloud_connection_status, get_rankings_local, get_user_profile_summary, init_db
@@ -117,9 +116,9 @@ class MainApp:
 
         body = tk.Frame(frame, bg=COLORS["bg"])
         body.pack(fill=tk.BOTH, expand=True, padx=42, pady=(18, 26))
-        body.grid_columnconfigure(0, weight=0, minsize=248)
+        body.grid_columnconfigure(0, weight=0, minsize=270)
         body.grid_columnconfigure(1, weight=1)
-        body.grid_columnconfigure(2, weight=0, minsize=248)
+        body.grid_columnconfigure(2, weight=0, minsize=300)
         body.grid_rowconfigure(0, weight=1)
 
         self._lobby_identity_panel(body).grid(row=0, column=0, sticky="nsew", padx=(0, 18))
@@ -141,9 +140,13 @@ class MainApp:
 
         footer_outer, footer = make_panel(frame, bg=COLORS["surface"], border=COLORS["border"])
         footer_outer.pack(fill=tk.X, padx=42, pady=(0, 30))
-        CyberButton(footer, text=t("btn_ranking"), variant="secondary", command=self._show_ranking).pack(
-            side=tk.LEFT, padx=16, pady=12, ipadx=12, ipady=4
-        )
+        tk.Label(
+            footer,
+            text=t("lobby_controls"),
+            font=(FONT_MONO, 9),
+            bg=COLORS["surface"],
+            fg=COLORS["subtle"],
+        ).pack(side=tk.LEFT, padx=16, pady=12)
         tk.Label(
             footer,
             text="NEON_SWEEP // COMMAND DECK",
@@ -197,26 +200,61 @@ class MainApp:
             bg=COLORS["surface"],
             fg=COLORS["primary"],
         ).pack(anchor="w", padx=20, pady=(22, 8))
+        local_total = sum(len(get_rankings_local(difficulty, 1000)) for difficulty in DIFFICULTY_CONFIG)
         status_items = [
             (t("cloud_provider"), "GITHUB", COLORS["primary"]),
             (t("cloud_repository"), "siray1007/minesweeper", COLORS["text"]),
+            (t("cloud_local_records"), str(local_total).zfill(2), COLORS["success"]),
         ]
         for label, value, accent in status_items:
-            metric_label(inner, label, value, accent=accent).pack(fill=tk.X, padx=20, pady=(0, 18))
+            metric_label(inner, label, value, accent=accent).pack(fill=tk.X, padx=20, pady=(0, 14))
 
         tk.Frame(inner, bg=COLORS["border"], height=1).pack(fill=tk.X, padx=20, pady=(8, 16))
         self._cloud_mode_metric = metric_label(
             inner, t("cloud_access"), t("cloud_checking"), accent=COLORS["warning"]
         )
-        self._cloud_mode_metric.pack(fill=tk.X, padx=20, pady=(0, 18))
+        self._cloud_mode_metric.pack(fill=tk.X, padx=20, pady=(0, 14))
         self._cloud_mode_value = self._cloud_mode_metric.winfo_children()[-1]
         self._cloud_link_metric = metric_label(
             inner, t("cloud_link"), t("cloud_checking"), accent=COLORS["warning"]
         )
-        self._cloud_link_metric.pack(fill=tk.X, padx=20, pady=(0, 18))
+        self._cloud_link_metric.pack(fill=tk.X, padx=20, pady=(0, 14))
         self._cloud_link_value = self._cloud_link_metric.winfo_children()[-1]
+        self._cloud_detail = tk.Label(
+            inner,
+            text=t("cloud_read_only_detail"),
+            font=(FONT, 10),
+            bg=COLORS["surface"],
+            fg=COLORS["muted"],
+            wraplength=250,
+            justify="left",
+        )
+        self._cloud_detail.pack(fill=tk.X, padx=20, pady=(4, 18))
+        CyberButton(
+            inner,
+            text=t("btn_ranking"),
+            variant="secondary",
+            command=self._show_ranking,
+            size="large",
+        ).pack(fill=tk.X, padx=20, pady=(10, 10))
+        CyberButton(
+            inner,
+            text=t("cloud_probe_now"),
+            variant="secondary",
+            command=self._restart_cloud_probe,
+        ).pack(fill=tk.X, padx=20)
         self._start_cloud_probe()
         return outer
+
+    def _restart_cloud_probe(self) -> None:
+        self._cancel_cloud_probe()
+        if hasattr(self, "_cloud_link_value") and self._cloud_link_value.winfo_exists():
+            self._cloud_link_value.configure(text=t("cloud_checking"), fg=COLORS["warning"])
+        if hasattr(self, "_cloud_mode_value") and self._cloud_mode_value.winfo_exists():
+            self._cloud_mode_value.configure(text=t("cloud_checking"), fg=COLORS["warning"])
+        if hasattr(self, "_cloud_detail") and self._cloud_detail.winfo_exists():
+            self._cloud_detail.configure(text=t("cloud_read_only_detail"), fg=COLORS["muted"])
+        self._start_cloud_probe()
 
     def _start_cloud_probe(self) -> None:
         def probe() -> None:
@@ -245,6 +283,14 @@ class MainApp:
             text=t("cloud_read_write") if writable else t("cloud_read_only"),
             fg=COLORS["success"] if writable else COLORS["warning"],
         )
+        if hasattr(self, "_cloud_detail") and self._cloud_detail.winfo_exists():
+            if not connected:
+                detail, color = t("cloud_offline_detail"), COLORS["danger"]
+            elif writable:
+                detail, color = t("cloud_read_write_detail"), COLORS["success"]
+            else:
+                detail, color = t("cloud_read_only_detail"), COLORS["warning"]
+            self._cloud_detail.configure(text=detail, fg=color)
 
     def _cancel_cloud_probe(self) -> None:
         if self._cloud_probe_job is None:
@@ -567,10 +613,9 @@ class MainApp:
         self._show_auth()
 
     def _logout(self) -> None:
-        if messagebox.askyesno(t("btn_account"), t("logout_confirm"), parent=self.root):
-            self.current_user = None
-            self._close_profile_dialog()
-            self._show_auth()
+        self.current_user = None
+        self._close_profile_dialog()
+        self._show_auth()
 
     def _handle_escape(self) -> None:
         if self._profile_dialog is not None and self._profile_dialog.winfo_exists():
@@ -582,8 +627,6 @@ class MainApp:
     def _quit(self) -> None:
         self._cancel_cloud_probe()
         self._close_profile_dialog()
-        if self.current_user and not messagebox.askyesno(t("title"), t("quit_confirm"), parent=self.root):
-            return
         self.root.destroy()
 
 

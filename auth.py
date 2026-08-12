@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import os
 import tkinter as tk
-from tkinter import messagebox
 
 from database import login_user, register_user
 from lang import LANG_OPTIONS, get_lang, save_lang, t
@@ -20,6 +19,9 @@ class AuthFrame(tk.Frame):
         self._backdrop = install_backdrop(self)
         self.on_login = on_login
         self._mode = "login"
+        self._inline_message: tk.Label | None = None
+        self._inline_message_text = t("auth_ready")
+        self._inline_message_kind = "info"
         self._show_login()
 
     def _clear(self) -> None:
@@ -38,6 +40,8 @@ class AuthFrame(tk.Frame):
                 if field is self.focus_get():
                     focused_name = name
         save_lang(language)
+        if self._inline_message_kind == "info":
+            self._inline_message_text = t("auth_ready")
         self.winfo_toplevel().title(t("title"))
         if self._mode == "register":
             self._show_register()
@@ -54,9 +58,9 @@ class AuthFrame(tk.Frame):
 
     def _language_selector(self) -> None:
         container = tk.Frame(self, bg=COLORS["bg"])
-        container.place(x=28, y=24)
+        container.place(relx=0.5, y=24, anchor="n")
 
-        tk.Label(container, text=t("language"), font=(FONT, 9), bg=COLORS["bg"], fg=COLORS["muted"]).pack(
+        tk.Label(container, text=t("language"), font=(FONT, 10, "bold"), bg=COLORS["bg"], fg=COLORS["muted"]).pack(
             side=tk.LEFT, padx=(0, 8)
         )
 
@@ -68,12 +72,12 @@ class AuthFrame(tk.Frame):
                 text=name,
                 variant="primary" if get_lang() == code else "secondary",
                 command=lambda selected=code: self._change_language(selected),
-                width=6,
+                width=8,
             ).pack(side=tk.LEFT, padx=(0 if code == LANG_OPTIONS[0][0] else 1, 0))
 
     def _create_card(self, height: int) -> tuple[tk.Frame, tk.Frame]:
         card, inner = make_panel(self, bg=COLORS["surface"], border=COLORS["border_hot"])
-        card.place(relx=0.5, rely=0.54, anchor="center", width=LAYOUT["auth"][0] - 180, height=height)
+        card.place(relx=0.5, rely=0.54, anchor="center", width=LAYOUT["auth"][0] - 150, height=height)
         self._auth_card = card
         return card, inner
 
@@ -100,8 +104,34 @@ class AuthFrame(tk.Frame):
             pady=(0, 8)
         )
         tk.Label(parent, text=t("auth_status"), font=(FONT_MONO, 9), bg=COLORS["surface"], fg=COLORS["subtle"]).pack(
-            pady=(0, 18)
+            pady=(0, 12)
         )
+
+    def _message_color(self) -> str:
+        return {
+            "success": COLORS["success"],
+            "warning": COLORS["warning"],
+            "error": COLORS["danger"],
+        }.get(self._inline_message_kind, COLORS["muted"])
+
+    def _set_inline_message(self, text: str, kind: str = "info") -> None:
+        self._inline_message_text = text
+        self._inline_message_kind = kind
+        if self._inline_message is not None and self._inline_message.winfo_exists():
+            self._inline_message.configure(text=text, fg=self._message_color())
+
+    def _inline_status(self, parent: tk.Misc) -> None:
+        self._inline_message = tk.Label(
+            parent,
+            text=self._inline_message_text,
+            font=(FONT, 10, "bold"),
+            bg=COLORS["surface"],
+            fg=self._message_color(),
+            wraplength=440,
+            justify="left",
+            anchor="w",
+        )
+        self._inline_message.pack(fill=tk.X, pady=(0, 12))
 
     def _field(self, parent: tk.Misc, label: str, *, show: str = "") -> tk.Entry:
         tk.Label(parent, text=label, font=(FONT, 10), anchor="w", bg=COLORS["surface"], fg=COLORS["muted"]).pack(
@@ -115,11 +145,12 @@ class AuthFrame(tk.Frame):
         self._mode = "login"
         self._clear()
         self._language_selector()
-        _, card = self._create_card(600)
+        _, card = self._create_card(620)
         self._header(card, t("login"))
 
         form = tk.Frame(card, bg=COLORS["surface"])
-        form.pack(fill=tk.X, padx=58)
+        form.pack(fill=tk.X, padx=68)
+        self._inline_status(form)
         self._user = self._field(form, t("username"))
         self._pwd = self._field(form, t("password"), show="*")
 
@@ -142,11 +173,12 @@ class AuthFrame(tk.Frame):
         self._mode = "register"
         self._clear()
         self._language_selector()
-        _, card = self._create_card(688)
+        _, card = self._create_card(720)
         self._header(card, t("register"))
 
         form = tk.Frame(card, bg=COLORS["surface"])
-        form.pack(fill=tk.X, padx=58)
+        form.pack(fill=tk.X, padx=68)
+        self._inline_status(form)
         self._reg_user = self._field(form, t("username"))
         self._reg_pwd = self._field(form, t("pwd_hint"), show="*")
         self._reg_cfm = self._field(form, t("confirm_pwd"), show="*")
@@ -165,14 +197,18 @@ class AuthFrame(tk.Frame):
         username = self._user.get().strip()
         password = self._pwd.get()
         if not username or not password:
-            messagebox.showwarning(t("login"), t("warn_empty"), parent=self)
+            self._set_inline_message(t("warn_empty"), "warning")
+            if not username:
+                self._user.focus_set()
+            else:
+                self._pwd.focus_set()
             return
 
         ok, result = login_user(username, password)
         if ok:
             self.on_login(result)
         else:
-            messagebox.showerror(t("login_fail"), result, parent=self)
+            self._set_inline_message(result, "error")
             self._pwd.selection_range(0, tk.END)
             self._pwd.focus_set()
 
@@ -181,19 +217,19 @@ class AuthFrame(tk.Frame):
         password = self._reg_pwd.get()
         confirm = self._reg_cfm.get()
         if not username or not password or not confirm:
-            messagebox.showwarning(t("register"), t("warn_empty"), parent=self)
+            self._set_inline_message(t("warn_empty"), "warning")
             return
         if password != confirm:
-            messagebox.showerror(t("reg_fail"), t("pwd_mismatch"), parent=self)
+            self._set_inline_message(t("pwd_mismatch"), "error")
             self._reg_cfm.selection_range(0, tk.END)
             self._reg_cfm.focus_set()
             return
 
         ok, message = register_user(username, password)
         if ok:
-            messagebox.showinfo(t("reg_ok"), message, parent=self)
+            self._set_inline_message(message, "success")
             self._show_login()
             self._user.insert(0, username)
             self._pwd.focus_set()
         else:
-            messagebox.showerror(t("reg_fail"), message, parent=self)
+            self._set_inline_message(message, "error")
