@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import tkinter as tk
+from tkinter import ttk
 
 from database import login_user, register_user
 from lang import LANG_OPTIONS, get_lang, save_lang, t
@@ -58,22 +59,31 @@ class AuthFrame(tk.Frame):
 
     def _language_selector(self) -> None:
         container = tk.Frame(self, bg=COLORS["bg"])
-        container.place(relx=0.5, y=24, anchor="n")
+        container.place(x=24, y=22, anchor="nw")
 
         tk.Label(container, text=t("language"), font=(FONT, 10, "bold"), bg=COLORS["bg"], fg=COLORS["muted"]).pack(
             side=tk.LEFT, padx=(0, 8)
         )
 
-        segment = tk.Frame(container, bg=COLORS["border"], padx=1, pady=1)
-        segment.pack(side=tk.LEFT)
-        for code, name in LANG_OPTIONS:
-            CyberButton(
-                segment,
-                text=name,
-                variant="primary" if get_lang() == code else "secondary",
-                command=lambda selected=code: self._change_language(selected),
-                width=8,
-            ).pack(side=tk.LEFT, padx=(0 if code == LANG_OPTIONS[0][0] else 1, 0))
+        names = [name for _code, name in LANG_OPTIONS]
+        current_name = dict(LANG_OPTIONS).get(get_lang(), names[0])
+        self._language_var = tk.StringVar(value=current_name)
+        self._language_combo = ttk.Combobox(
+            container,
+            textvariable=self._language_var,
+            values=names,
+            state="readonly",
+            style="Language.TCombobox",
+            width=14,
+        )
+        self._language_combo.pack(side=tk.LEFT, ipady=5)
+        self._language_combo.bind("<<ComboboxSelected>>", self._language_selected)
+
+    def _language_selected(self, _event=None) -> None:
+        selected_name = self._language_var.get()
+        selected_code = next((code for code, name in LANG_OPTIONS if name == selected_name), get_lang())
+        if selected_code != get_lang():
+            self._change_language(selected_code)
 
     def _create_card(self, height: int) -> tuple[tk.Frame, tk.Frame]:
         card, inner = make_panel(self, bg=COLORS["surface"], border=COLORS["border_hot"])

@@ -2,12 +2,10 @@
 from __future__ import annotations
 
 import os
-import queue
-import threading
 import tkinter as tk
 
 from auth import AuthFrame
-from database import cloud_connection_status, get_rankings_local, get_user_profile_summary, init_db
+from database import get_rankings_local, get_user_profile_summary, init_db
 from game import DIFFICULTY_CONFIG, GameFrame, board_density
 from lang import t
 from ranking import RankingFrame
@@ -50,8 +48,6 @@ class MainApp:
         self.current_user: dict | None = None
         self.current_frame: tk.Widget | None = None
         self._profile_dialog: tk.Toplevel | None = None
-        self._cloud_status_queue: queue.Queue[dict] = queue.Queue()
-        self._cloud_probe_job: str | None = None
         self._icon = load_photo(_ICON_PATH, master=self.root)
         if self._icon is not None:
             self.root.iconphoto(True, self._icon)
@@ -61,14 +57,12 @@ class MainApp:
         self.root.resizable(True, True)
         self.root.protocol("WM_DELETE_WINDOW", self._quit)
         self.root.bind("<Escape>", lambda _event: self._handle_escape())
-        self.root.bind("<Destroy>", self._on_root_destroy, add="+")
         init_db()
         self._show_auth()
         if start_loop:
             self.root.mainloop()
 
     def _swap(self, frame_class, *args) -> None:
-        self._cancel_cloud_probe()
         if self.current_frame is not None:
             self.current_frame.destroy()
         self.current_frame = frame_class(self.root, *args)
@@ -86,7 +80,6 @@ class MainApp:
 
     def _show_menu(self) -> None:
         self._close_profile_dialog()
-        self._cancel_cloud_probe()
         self.root.title(t("menu_title"))
         set_window_geometry(self.root, *LAYOUT["lobby"])
         if self.current_frame is not None:
@@ -136,7 +129,7 @@ class MainApp:
         for column, (key, code, label, description, accent) in enumerate(difficulties):
             self._difficulty_card(modules, column, key, code, label, description, accent)
 
-        self._lobby_status_panel(body).grid(row=0, column=2, sticky="nsew", padx=(18, 0))
+        self._lobby_records_panel(body).grid(row=0, column=2, sticky="nsew", padx=(18, 0))
 
         footer_outer, footer = make_panel(frame, bg=COLORS["surface"], border=COLORS["border"])
         footer_outer.pack(fill=tk.X, padx=42, pady=(0, 30))
@@ -191,119 +184,52 @@ class MainApp:
 
         return outer
 
-    def _lobby_status_panel(self, parent) -> tk.Frame:
+    def _lobby_records_panel(self, parent) -> tk.Frame:
         outer, inner = make_panel(parent, bg=COLORS["surface"], border=COLORS["border"])
         tk.Label(
             inner,
-            text=t("cloud_panel_title"),
+            text=t("lobby_records_title"),
             font=(FONT_MONO, 9, "bold"),
             bg=COLORS["surface"],
             fg=COLORS["primary"],
         ).pack(anchor="w", padx=20, pady=(22, 8))
-        local_total = sum(len(get_rankings_local(difficulty, 1000)) for difficulty in DIFFICULTY_CONFIG)
-        status_items = [
-            (t("cloud_provider"), "GITHUB", COLORS["primary"]),
-            (t("cloud_repository"), "siray1007/minesweeper", COLORS["text"]),
-            (t("cloud_local_records"), str(local_total).zfill(2), COLORS["success"]),
-        ]
-        for label, value, accent in status_items:
-            metric_label(inner, label, value, accent=accent).pack(fill=tk.X, padx=20, pady=(0, 14))
-
-        tk.Frame(inner, bg=COLORS["border"], height=1).pack(fill=tk.X, padx=20, pady=(8, 16))
-        self._cloud_mode_metric = metric_label(
-            inner, t("cloud_access"), t("cloud_checking"), accent=COLORS["warning"]
-        )
-        self._cloud_mode_metric.pack(fill=tk.X, padx=20, pady=(0, 14))
-        self._cloud_mode_value = self._cloud_mode_metric.winfo_children()[-1]
-        self._cloud_link_metric = metric_label(
-            inner, t("cloud_link"), t("cloud_checking"), accent=COLORS["warning"]
-        )
-        self._cloud_link_metric.pack(fill=tk.X, padx=20, pady=(0, 14))
-        self._cloud_link_value = self._cloud_link_metric.winfo_children()[-1]
-        self._cloud_detail = tk.Label(
+        tk.Label(
             inner,
-            text=t("cloud_read_only_detail"),
+            text=t("lobby_records_subtitle"),
             font=(FONT, 10),
             bg=COLORS["surface"],
             fg=COLORS["muted"],
             wraplength=250,
             justify="left",
-        )
-        self._cloud_detail.pack(fill=tk.X, padx=20, pady=(4, 18))
+        ).pack(anchor="w", padx=20, pady=(0, 22))
+
+        accents = {
+            "9x9": COLORS["success"],
+            "27x27": COLORS["warning"],
+            "81x81": COLORS["danger"],
+        }
+        for difficulty, label in (
+            ("9x9", t("diff_easy")),
+            ("27x27", t("diff_medium")),
+            ("81x81", t("diff_hard")),
+        ):
+            _runs, best_seconds = self._personal_stats(difficulty)
+            metric_label(
+                inner,
+                label,
+                format_duration(best_seconds),
+                accent=accents[difficulty],
+            ).pack(fill=tk.X, padx=20, pady=(0, 16))
+
+        tk.Frame(inner, bg=COLORS["border"], height=1).pack(fill=tk.X, padx=20, pady=(4, 18))
         CyberButton(
             inner,
             text=t("btn_ranking"),
             variant="secondary",
             command=self._show_ranking,
             size="large",
-        ).pack(fill=tk.X, padx=20, pady=(10, 10))
-        CyberButton(
-            inner,
-            text=t("cloud_probe_now"),
-            variant="secondary",
-            command=self._restart_cloud_probe,
-        ).pack(fill=tk.X, padx=20)
-        self._start_cloud_probe()
+        ).pack(fill=tk.X, padx=20, pady=(0, 20))
         return outer
-
-    def _restart_cloud_probe(self) -> None:
-        self._cancel_cloud_probe()
-        if hasattr(self, "_cloud_link_value") and self._cloud_link_value.winfo_exists():
-            self._cloud_link_value.configure(text=t("cloud_checking"), fg=COLORS["warning"])
-        if hasattr(self, "_cloud_mode_value") and self._cloud_mode_value.winfo_exists():
-            self._cloud_mode_value.configure(text=t("cloud_checking"), fg=COLORS["warning"])
-        if hasattr(self, "_cloud_detail") and self._cloud_detail.winfo_exists():
-            self._cloud_detail.configure(text=t("cloud_read_only_detail"), fg=COLORS["muted"])
-        self._start_cloud_probe()
-
-    def _start_cloud_probe(self) -> None:
-        def probe() -> None:
-            self._cloud_status_queue.put(cloud_connection_status())
-
-        threading.Thread(target=probe, daemon=True).start()
-        self._cloud_probe_job = self.root.after(100, self._poll_cloud_probe)
-
-    def _poll_cloud_probe(self) -> None:
-        self._cloud_probe_job = None
-        try:
-            status = self._cloud_status_queue.get_nowait()
-        except queue.Empty:
-            if self.current_user is not None:
-                self._cloud_probe_job = self.root.after(100, self._poll_cloud_probe)
-            return
-        if not hasattr(self, "_cloud_link_value") or not self._cloud_link_value.winfo_exists():
-            return
-        connected = status["connected"]
-        writable = status["writable"]
-        self._cloud_link_value.configure(
-            text=t("cloud_connected") if connected else t("cloud_offline"),
-            fg=COLORS["success"] if connected else COLORS["danger"],
-        )
-        self._cloud_mode_value.configure(
-            text=t("cloud_read_write") if writable else t("cloud_read_only"),
-            fg=COLORS["success"] if writable else COLORS["warning"],
-        )
-        if hasattr(self, "_cloud_detail") and self._cloud_detail.winfo_exists():
-            if not connected:
-                detail, color = t("cloud_offline_detail"), COLORS["danger"]
-            elif writable:
-                detail, color = t("cloud_read_write_detail"), COLORS["success"]
-            else:
-                detail, color = t("cloud_read_only_detail"), COLORS["warning"]
-            self._cloud_detail.configure(text=detail, fg=color)
-
-    def _cancel_cloud_probe(self) -> None:
-        if self._cloud_probe_job is None:
-            return
-        try:
-            self.root.after_cancel(self._cloud_probe_job)
-        except tk.TclError:
-            pass
-        self._cloud_probe_job = None
-
-    def _on_root_destroy(self, event) -> None:
-        if event.widget is self.root:
-            self._cancel_cloud_probe()
 
     def _difficulty_card(
         self, parent, column: int, key: str, code: str, label: str, description: str, accent: str
@@ -385,8 +311,6 @@ class MainApp:
         if self.current_user is None:
             self._show_auth()
             return
-        self._cancel_cloud_probe()
-
         dialog = self._profile_dialog
         if dialog is not None and dialog.winfo_exists():
             dialog.deiconify()
@@ -625,7 +549,6 @@ class MainApp:
             self._show_menu()
 
     def _quit(self) -> None:
-        self._cancel_cloud_probe()
         self._close_profile_dialog()
         self.root.destroy()
 

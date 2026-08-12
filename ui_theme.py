@@ -16,7 +16,7 @@ COLORS = {
     "border": "#22314a",
     "border_hot": "#2ce6ff",
     "border_dim": "#263c5c",
-    "tile_border": "#42648e",
+    "tile_border": "#3c78a8",
     "tile_open_border": "#314f73",
     "text": "#edf3ff",
     "muted": "#8a97b2",
@@ -31,14 +31,14 @@ COLORS = {
     "danger_dim": "#391320",
     "accent": "#9b6dff",
     "input": "#050812",
-    "tile_even": "#243c62",
-    "tile_odd": "#13243e",
+    "tile_even": "#17395c",
+    "tile_odd": "#14334f",
     "tile_open": "#09111d",
     "tile_open_alt": "#0c1929",
     "tile_flag": "#4c1837",
     "tile_flag_hot": "#ff7b9a",
-    "tile_edge_light": "#5e82b4",
-    "tile_edge_shadow": "#07101d",
+    "tile_edge_light": "#68b7e8",
+    "tile_edge_shadow": "#081522",
 }
 
 FONT = "Microsoft YaHei UI"
@@ -105,6 +105,10 @@ class CyberButton(tk.Button):
 
 def configure_ttk(root: tk.Misc) -> None:
     """Configure shared ttk styles for the app."""
+    root.option_add("*TCombobox*Listbox.background", COLORS["surface_metal"])
+    root.option_add("*TCombobox*Listbox.foreground", COLORS["text"])
+    root.option_add("*TCombobox*Listbox.selectBackground", COLORS["primary"])
+    root.option_add("*TCombobox*Listbox.selectForeground", "#08101b")
     style = ttk.Style(root)
     try:
         style.theme_use("clam")
@@ -156,6 +160,26 @@ def configure_ttk(root: tk.Misc) -> None:
         "Ghost.TButton",
         background=[("active", COLORS["surface_hover"])],
         foreground=[("active", COLORS["text"])],
+    )
+
+    style.configure(
+        "Language.TCombobox",
+        font=(FONT, 11, "bold"),
+        padding=(12, 8),
+        fieldbackground=COLORS["surface_metal"],
+        background=COLORS["surface_metal"],
+        foreground=COLORS["text"],
+        arrowcolor=COLORS["primary"],
+        bordercolor=COLORS["border_hot"],
+        lightcolor=COLORS["border_hot"],
+        darkcolor=COLORS["border_hot"],
+    )
+    style.map(
+        "Language.TCombobox",
+        fieldbackground=[("readonly", COLORS["surface_metal"])],
+        foreground=[("readonly", COLORS["text"])],
+        selectbackground=[("readonly", COLORS["surface_metal"])],
+        selectforeground=[("readonly", COLORS["text"])],
     )
 
     style.configure("App.TNotebook", background=COLORS["bg"], borderwidth=0, tabmargins=0)

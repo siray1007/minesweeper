@@ -358,9 +358,10 @@ class GameFrame(tk.Frame):
 
     def _draw_unrevealed_tile(self, canvas, x1: float, y1: float, x2: float, y2: float, fill: str, outline: str) -> None:
         canvas.create_rectangle(x1, y1, x2, y2, fill=fill, outline=COLORS["tile_edge_shadow"], width=1)
-        canvas.create_rectangle(x1 + 1, y1 + 1, x2 - 1, y2 - 1, outline=outline, width=1)
-        canvas.create_line(x1 + 2, y1 + 2, x2 - 3, y1 + 2, fill=COLORS["tile_edge_light"], width=1)
-        canvas.create_line(x1 + 2, y1 + 2, x1 + 2, y2 - 3, fill=COLORS["surface_hover"], width=1)
+        canvas.create_line(x1 + 1, y1 + 1, x2 - 1, y1 + 1, fill=COLORS["tile_edge_light"], width=1)
+        canvas.create_line(x1 + 1, y1 + 1, x1 + 1, y2 - 1, fill=outline, width=1)
+        canvas.create_line(x1 + 1, y2 - 1, x2 - 1, y2 - 1, fill=COLORS["tile_edge_shadow"], width=1)
+        canvas.create_line(x2 - 1, y1 + 1, x2 - 1, y2 - 1, fill=COLORS["tile_edge_shadow"], width=1)
 
     def _draw_revealed_tile(self, canvas, x1: float, y1: float, x2: float, y2: float, row: int, col: int) -> None:
         fill = COLORS["tile_open_alt"] if (row + col) % 2 else COLORS["tile_open"]
@@ -503,13 +504,7 @@ class GameFrame(tk.Frame):
                         )
                 else:
                     fill, outline = self._tile_colors(row, col)
-                    self.canvas.create_rectangle(
-                        x1, y1, x2, y2, fill=fill, outline=COLORS["tile_edge_shadow"], width=1
-                    )
-                    if size >= 8:
-                        self.canvas.create_rectangle(x1 + 1, y1 + 1, x2 - 1, y2 - 1, outline=outline, width=1)
-                    if size >= 14:
-                        self.canvas.create_line(x1 + 2, y1 + 2, x2 - 3, y1 + 2, fill=COLORS["tile_edge_light"], width=1)
+                    self._draw_unrevealed_tile(self.canvas, x1, y1, x2, y2, fill, outline)
         width, height = self.game.cols * size, self.game.rows * size
         canvas_width, canvas_height = int(round(width)), int(round(height))
         self.canvas.configure(width=canvas_width, height=canvas_height)
