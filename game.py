@@ -7,7 +7,7 @@ import threading
 import tkinter as tk
 from tkinter import ttk
 
-from database import _gitee_append_ranking, save_ranking
+from database import _gitee_append_ranking, save_match_result, save_ranking
 from lang import t
 from ui_theme import (
     COLORS,
@@ -525,6 +525,7 @@ class GameFrame(tk.Frame):
         self._update_status()
         if result == "game_over":
             self._stop_timer()
+            save_match_result(self.user["id"], self.difficulty, "game_over", self.timer_seconds)
             self._reveal_all_mines()
             self.after(180, lambda: self._show_result_panel("game_over"))
         elif result == "win":
@@ -723,6 +724,7 @@ class GameFrame(tk.Frame):
 
     def _on_win(self):
         save_ranking(self.user["id"], self.difficulty, self.timer_seconds)
+        save_match_result(self.user["id"], self.difficulty, "win", self.timer_seconds)
         self._show_result_panel("win")
         threading.Thread(
             target=_gitee_append_ranking,
