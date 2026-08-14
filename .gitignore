@@ -16,6 +16,9 @@ build_temp/
 __pycache__/
 *.pyc
 
+# Rust
+rust版/target/
+
 # 系统文件
 Thumbs.db
 /.worktrees/
