@@ -1,5 +1,6 @@
 mod game;
 mod solver;
+mod sound;
 mod storage;
 
 use std::collections::{HashMap, HashSet};
@@ -488,7 +489,11 @@ impl App {
 
         if response.secondary_clicked() {
             if let Some(idx) = self.cell_at(response, origin) {
+                let before = self.game.board.flagged[idx];
                 self.game.board.toggle_flag(idx);
+                if self.game.board.flagged[idx] != before {
+                    sound::play_flag();
+                }
             }
         }
 
@@ -501,7 +506,11 @@ impl App {
 
         if response.clicked() {
             if let Some(idx) = self.cell_at(response, origin) {
+                let before = self.game.board.revealed_count();
                 let result = self.reveal_with_anim(idx);
+                if self.game.board.revealed_count() > before {
+                    sound::play_reveal();
+                }
                 self.apply_result(result);
             }
         }
@@ -533,6 +542,7 @@ impl App {
     fn apply_result(&mut self, result: RevealResult) {
         match result {
             RevealResult::GameOver => {
+                sound::play_explosion();
                 self.game.wrong_flags = self.game.board.reveal_all_mines();
                 if let Some(mine) = self.game.board.triggered_mine {
                     self.spawn_explosion(mine);
@@ -540,6 +550,7 @@ impl App {
                 self.record_result(false);
             }
             RevealResult::Win => {
+                sound::play_win();
                 self.game.board.flagged = self.game.board.cells.iter().map(|&c| c == -1).collect();
                 self.record_result(true);
             }
