@@ -1,16 +1,13 @@
 """Login and registration screens."""
 from __future__ import annotations
 
-import os
 import tkinter as tk
 from tkinter import ttk
 
 from database import login_user, register_user
 from lang import LANG_OPTIONS, get_lang, save_lang, t
-from ui_theme import COLORS, FONT, FONT_MONO, LAYOUT, CyberButton, configure_ttk, install_backdrop, load_photo, make_entry, make_panel
-
-
-_ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bomb32.png")
+from sound import is_enabled, set_enabled
+from ui_theme import COLORS, FONT, FONT_MONO, LAYOUT, CyberButton, configure_ttk, get_theme, install_backdrop, make_entry, make_panel, set_theme
 
 
 class AuthFrame(tk.Frame):
@@ -58,35 +55,64 @@ class AuthFrame(tk.Frame):
             focused_field.icursor(tk.END)
 
     def _language_selector(self) -> None:
-        module = tk.Frame(self, bg=COLORS["border_hot"], padx=1, pady=1)
-        module.place(x=24, y=22, anchor="nw")
+        # 紧凑模块：尺寸贴合文字，不预留大块空白
+        module = tk.Frame(self, bg=COLORS["border"], padx=1, pady=1)
+        module.place(x=30, y=28, anchor="nw")
         self._language_module = module
-        container = tk.Frame(module, bg=COLORS["surface_metal"])
+        container = tk.Frame(module, bg=COLORS["surface_alt"])
         container.pack(fill=tk.BOTH, expand=True)
 
+        row = tk.Frame(container, bg=COLORS["surface_alt"])
+        row.pack(fill=tk.BOTH, expand=True)
+
+        left_box = tk.Frame(
+            row,
+            bg=COLORS["surface_alt"],
+            highlightthickness=1,
+            highlightbackground=COLORS["border_dim"],
+            highlightcolor=COLORS["border_dim"],
+        )
+        left_box.pack(side=tk.LEFT, fill=tk.Y)
+        self._language_left_box = left_box
         tk.Label(
-            container,
+            left_box,
             text=t("language"),
             font=(FONT, 10, "bold"),
-            bg=COLORS["surface_metal"],
+            bg=COLORS["surface_alt"],
             fg=COLORS["muted"],
-            padx=14,
-        ).pack(side=tk.LEFT, fill=tk.Y)
-        tk.Frame(container, bg=COLORS["border"], width=1).pack(side=tk.LEFT, fill=tk.Y)
+            padx=12,
+            pady=9,
+        ).pack()
 
         names = [name for _code, name in LANG_OPTIONS]
         current_name = dict(LANG_OPTIONS).get(get_lang(), names[0])
         self._language_var = tk.StringVar(value=current_name)
+        combo_shell = tk.Frame(
+            row,
+            bg=COLORS["surface_alt"],
+            highlightthickness=1,
+            highlightbackground=COLORS["border_dim"],
+            highlightcolor=COLORS["border_dim"],
+        )
+        combo_shell.pack(side=tk.LEFT, fill=tk.Y)
+        self._language_combo_shell = combo_shell
         self._language_combo = ttk.Combobox(
-            container,
+            combo_shell,
             textvariable=self._language_var,
             values=names,
             state="readonly",
             style="Language.TCombobox",
-            width=14,
+            width=10,
+            font=(FONT, 10, "bold"),
         )
-        self._language_combo.pack(side=tk.LEFT, fill=tk.Y, ipady=5, padx=(0, 2))
+        self._language_combo.pack(fill=tk.Y, padx=4, pady=4)
+        self._language_combo.bind("<FocusIn>", lambda _event: self._set_language_focus(True), add="+")
+        self._language_combo.bind("<FocusOut>", lambda _event: self._set_language_focus(False), add="+")
         self._language_combo.bind("<<ComboboxSelected>>", self._language_selected)
+
+    def _set_language_focus(self, focused: bool) -> None:
+        if getattr(self, "_language_module", None) is not None:
+            self._language_module.configure(bg=COLORS["border_hot"] if focused else COLORS["border"])
 
     def _language_selected(self, _event=None) -> None:
         selected_name = self._language_var.get()
@@ -94,9 +120,53 @@ class AuthFrame(tk.Frame):
         if selected_code != get_lang():
             self._change_language(selected_code)
 
+    def _theme_label(self) -> str:
+        return "浅色" if get_theme() == "light" else "深色"
+
+    def _sound_label(self) -> str:
+        return "音效开" if is_enabled() else "音效关"
+
+    def _toggle_sound(self) -> None:
+        set_enabled(not is_enabled())
+        if self._sound_button is not None and self._sound_button.winfo_exists():
+            self._sound_button.configure(text=self._sound_label())
+
+    def _settings_row(self, parent: tk.Misc) -> None:
+        row = tk.Frame(parent, bg=COLORS["surface"])
+        row.pack(fill=tk.X, pady=(8, 16))
+        self._theme_button = CyberButton(
+            row, text=self._theme_label(), command=self._toggle_theme, variant="secondary", size="normal"
+        )
+        self._theme_button.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
+        self._sound_button = CyberButton(
+            row, text=self._sound_label(), command=self._toggle_sound, variant="secondary", size="normal"
+        )
+        self._sound_button.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(6, 0))
+
+    def _toggle_theme(self) -> None:
+        values = {}
+        for name in ("_user", "_pwd", "_reg_user", "_reg_pwd", "_reg_cfm"):
+            field = getattr(self, name, None)
+            if field is not None and field.winfo_exists():
+                values[name] = field.get()
+        new_theme = "light" if get_theme() == "dark" else "dark"
+        set_theme(new_theme)
+        backdrop = getattr(self, "_backdrop", None)
+        if backdrop is not None:
+            backdrop.destroy()
+        self._backdrop = install_backdrop(self)
+        if self._mode == "register":
+            self._show_register()
+        else:
+            self._show_login()
+        for name, value in values.items():
+            field = getattr(self, name, None)
+            if field is not None and field.winfo_exists():
+                field.insert(0, value)
+
     def _create_card(self, height: int) -> tuple[tk.Frame, tk.Frame]:
-        card, inner = make_panel(self, bg=COLORS["surface"], border=COLORS["border_hot"])
-        card.place(relx=0.5, rely=0.54, anchor="center", width=LAYOUT["auth"][0] - 150, height=height)
+        card, inner = make_panel(self, bg=COLORS["surface"], border=COLORS["border"])
+        card.place(relx=0.5, rely=0.53, anchor="center", width=LAYOUT["auth"][0] - 140, height=height)
         self._auth_card = card
         return card, inner
 
@@ -107,23 +177,12 @@ class AuthFrame(tk.Frame):
             font=(FONT_MONO, 10, "bold"),
             bg=COLORS["surface"],
             fg=COLORS["primary"],
-        ).pack(pady=(20, 6))
-        image = load_photo(_ICON, master=self)
-        if image is not None:
-            self._icon_image = image
-            tk.Label(parent, image=image, bg=COLORS["surface"]).pack(pady=(0, 6))
-        else:
-            tk.Label(parent, text="MINE", font=(FONT, 15, "bold"), bg=COLORS["surface"], fg=COLORS["primary"]).pack(
-                pady=(0, 6)
-            )
-
-        tk.Label(parent, text=t("title"), font=(FONT, 31, "bold"), bg=COLORS["surface"], fg=COLORS["text"]).pack()
-        tk.Frame(parent, bg=COLORS["primary"], height=2).pack(fill=tk.X, padx=112, pady=(10, 10))
-        tk.Label(parent, text=subtitle, font=(FONT, 13), bg=COLORS["surface"], fg=COLORS["muted"]).pack(
-            pady=(0, 8)
-        )
+        ).pack(pady=(10, 2))
+        tk.Label(parent, text=t("title"), font=(FONT, 26, "bold"), bg=COLORS["surface"], fg=COLORS["text"]).pack()
+        tk.Frame(parent, bg=COLORS["primary"], height=2).pack(fill=tk.X, padx=110, pady=(6, 6))
+        tk.Label(parent, text=subtitle, font=(FONT, 12), bg=COLORS["surface"], fg=COLORS["muted"]).pack(pady=(0, 2))
         tk.Label(parent, text=t("auth_status"), font=(FONT_MONO, 9), bg=COLORS["surface"], fg=COLORS["subtle"]).pack(
-            pady=(0, 12)
+            pady=(0, 6)
         )
 
     def _message_color(self) -> str:
@@ -146,43 +205,51 @@ class AuthFrame(tk.Frame):
             font=(FONT, 10, "bold"),
             bg=COLORS["surface"],
             fg=self._message_color(),
-            wraplength=440,
+            wraplength=520,
             justify="left",
             anchor="w",
         )
-        self._inline_message.pack(fill=tk.X, pady=(0, 12))
+        self._inline_message.pack(fill=tk.X, pady=(0, 9))
 
     def _field(self, parent: tk.Misc, label: str, *, show: str = "") -> tk.Entry:
         tk.Label(parent, text=label, font=(FONT, 10), anchor="w", bg=COLORS["surface"], fg=COLORS["muted"]).pack(
-            fill=tk.X, pady=(0, 6)
+            fill=tk.X, pady=(0, 3)
         )
         entry = make_entry(parent, show=show)
-        entry.pack(fill=tk.X, ipady=9, pady=(0, 14))
+        entry.pack(fill=tk.X, ipady=7, pady=(0, 7))
         return entry
+
+    def _action_button(self, parent: tk.Misc, text: str, command, *, variant: str = "primary") -> CyberButton:
+        """Render every auth action in the same fixed-height control slot."""
+        slot = tk.Frame(parent, bg=COLORS["surface"], height=62)
+        slot.pack(fill=tk.X, pady=(0, 12))
+        slot.pack_propagate(False)
+        button = CyberButton(slot, text=text, command=command, variant=variant)
+        button.pack(fill=tk.BOTH, expand=True)
+        return button
 
     def _show_login(self) -> None:
         self._mode = "login"
         self._clear()
         self._language_selector()
-        _, card = self._create_card(620)
+        _, card = self._create_card(610)
         self._header(card, t("login"))
 
         form = tk.Frame(card, bg=COLORS["surface"])
-        form.pack(fill=tk.X, padx=68)
+        form.pack(fill=tk.X, padx=70)
         self._inline_status(form)
         self._user = self._field(form, t("username"))
         self._pwd = self._field(form, t("password"), show="*")
 
-        CyberButton(form, text=t("btn_login"), command=self._do_login).pack(
-            fill=tk.X, pady=(2, 14)
-        )
+        self.login_submit_button = self._action_button(form, t("btn_login"), self._do_login)
 
-        tk.Frame(form, bg=COLORS["border"], height=1).pack(fill=tk.X, pady=(2, 12))
+        tk.Frame(form, bg=COLORS["border"], height=1).pack(fill=tk.X, pady=(0, 10))
         tk.Label(form, text=t("no_account"), font=(FONT, 9), bg=COLORS["surface"], fg=COLORS["subtle"]).pack(
-            pady=(0, 7)
+            pady=(0, 5)
         )
-        self.register_nav_button = CyberButton(form, text=t("to_register"), variant="secondary", command=self._show_register)
-        self.register_nav_button.pack(fill=tk.X)
+        self.register_nav_button = self._action_button(form, t("to_register"), self._show_register, variant="secondary")
+        self.register_nav_button.pack_configure(pady=(0, 0))
+        self._settings_row(form)
 
         self._user.focus_set()
         self._user.bind("<Return>", lambda _event: self._pwd.focus_set())
@@ -192,20 +259,20 @@ class AuthFrame(tk.Frame):
         self._mode = "register"
         self._clear()
         self._language_selector()
-        _, card = self._create_card(720)
+        _, card = self._create_card(660)
         self._header(card, t("register"))
 
         form = tk.Frame(card, bg=COLORS["surface"])
-        form.pack(fill=tk.X, padx=68)
+        form.pack(fill=tk.X, padx=70)
         self._inline_status(form)
         self._reg_user = self._field(form, t("username"))
         self._reg_pwd = self._field(form, t("pwd_hint"), show="*")
         self._reg_cfm = self._field(form, t("confirm_pwd"), show="*")
 
-        CyberButton(form, text=t("btn_register"), command=self._do_register).pack(
-            fill=tk.X, pady=(0, 12)
-        )
-        CyberButton(form, text=t("to_login"), variant="secondary", command=self._show_login).pack(fill=tk.X)
+        self.register_submit_button = self._action_button(form, t("btn_register"), self._do_register)
+        self.login_nav_button = self._action_button(form, t("to_login"), self._show_login, variant="secondary")
+        self.login_nav_button.pack_configure(pady=(0, 0))
+        self._settings_row(form)
 
         self._reg_user.focus_set()
         self._reg_user.bind("<Return>", lambda _event: self._reg_pwd.focus_set())

@@ -9,6 +9,7 @@ from database import get_rankings_local, get_user_profile_summary, init_db
 from game import DIFFICULTY_CONFIG, GameFrame, board_density
 from lang import t
 from ranking import RankingFrame
+from sound import is_enabled, set_enabled
 from ui_theme import (
     COLORS,
     FONT,
@@ -16,11 +17,15 @@ from ui_theme import (
     LAYOUT,
     CyberButton,
     configure_ttk,
+    get_theme,
     install_backdrop,
     load_photo,
+    load_theme,
     make_panel,
     metric_label,
+    save_window_geometry,
     section_title,
+    set_theme,
     set_window_geometry,
 )
 
@@ -34,6 +39,10 @@ def threat_key(difficulty: str) -> str:
     return {"9x9": "threat_low", "27x27": "threat_medium", "81x81": "threat_high"}[difficulty]
 
 
+def mode_key(difficulty: str) -> str:
+    return {"9x9": "mode_training", "27x27": "mode_advanced", "81x81": "mode_extreme"}[difficulty]
+
+
 def format_duration(seconds: int | None) -> str:
     if seconds is None:
         return t("no_record_short")
@@ -44,6 +53,7 @@ def format_duration(seconds: int | None) -> str:
 class MainApp:
     def __init__(self, *, start_loop: bool = True):
         self.root = tk.Tk()
+        load_theme()
         configure_ttk(self.root)
         self.current_user: dict | None = None
         self.current_frame: tk.Widget | None = None
@@ -91,27 +101,31 @@ class MainApp:
         self.current_frame = frame
 
         header_outer, header = make_panel(frame, bg=COLORS["surface"], border=COLORS["border_hot"])
-        header_outer.pack(fill=tk.X, padx=42, pady=(30, 16))
-        header.configure(height=116)
+        header_outer.pack(fill=tk.X, padx=40, pady=(28, 14))
+        header.configure(height=118)
         header.pack_propagate(False)
         image = load_photo(_BOMB_ICON, master=self.root)
         if image is not None:
             self._menu_icon = image
-            tk.Label(header, image=image, bg=COLORS["surface"]).pack(side=tk.LEFT, padx=(22, 18), pady=24)
+            tk.Label(header, image=image, bg=COLORS["surface"]).pack(side=tk.LEFT, padx=(22, 18), pady=22)
         title_block = tk.Frame(header, bg=COLORS["surface"])
         title_block.pack(side=tk.LEFT, anchor="w", fill=tk.X, expand=True, pady=18)
-        section_title(title_block, "MINESWEEPER // MINEFIELD OPS", t("menu_title"), t("menu_subtitle")).pack(
+        section_title(title_block, t("lobby_kicker"), t("menu_title"), t("menu_subtitle")).pack(
             anchor="w", fill=tk.X
         )
-        CyberButton(header, text=t("profile_label"), variant="secondary", command=self._show_profile, size="large").pack(
-            side=tk.RIGHT, anchor="n", padx=22, pady=24
+        CyberButton(header, text=t("profile_label"), variant="secondary", command=self._show_profile, size="large", width=6).pack(
+            side=tk.RIGHT, anchor="n", padx=22, pady=22
         )
+        self._lobby_theme_button = CyberButton(header, text=self._theme_label(), command=self._toggle_theme, variant="secondary", size="large", width=6)
+        self._lobby_theme_button.pack(side=tk.RIGHT, anchor="n", padx=(0, 6), pady=22)
+        self._lobby_sound_button = CyberButton(header, text=self._sound_label(), command=self._toggle_sound, variant="secondary", size="large", width=6)
+        self._lobby_sound_button.pack(side=tk.RIGHT, anchor="n", padx=(0, 6), pady=22)
 
         body = tk.Frame(frame, bg=COLORS["bg"])
-        body.pack(fill=tk.BOTH, expand=True, padx=42, pady=(18, 26))
-        body.grid_columnconfigure(0, weight=0, minsize=270)
+        body.pack(fill=tk.BOTH, expand=True, padx=40, pady=(12, 24))
+        body.grid_columnconfigure(0, weight=0, minsize=272)
         body.grid_columnconfigure(1, weight=1)
-        body.grid_columnconfigure(2, weight=0, minsize=300)
+        body.grid_columnconfigure(2, weight=0, minsize=306)
         body.grid_rowconfigure(0, weight=1)
 
         self._lobby_identity_panel(body).grid(row=0, column=0, sticky="nsew", padx=(0, 18))
@@ -122,9 +136,9 @@ class MainApp:
         modules.grid_rowconfigure(0, weight=1)
 
         difficulties = [
-            ("9x9", "TRAINING", t("diff_easy"), t("desc_easy"), COLORS["success"]),
-            ("27x27", "ADVANCED", t("diff_medium"), t("desc_medium"), COLORS["warning"]),
-            ("81x81", "EXTREME", t("diff_hard"), t("desc_hard"), COLORS["danger"]),
+            ("9x9", t("mode_training"), t("diff_easy"), t("desc_easy"), COLORS["success"]),
+            ("27x27", t("mode_advanced"), t("diff_medium"), t("desc_medium"), COLORS["warning"]),
+            ("81x81", t("mode_extreme"), t("diff_hard"), t("desc_hard"), COLORS["danger"]),
         ]
         for column, (key, code, label, description, accent) in enumerate(difficulties):
             self._difficulty_card(modules, column, key, code, label, description, accent)
@@ -132,21 +146,21 @@ class MainApp:
         self._lobby_records_panel(body).grid(row=0, column=2, sticky="nsew", padx=(18, 0))
 
         footer_outer, footer = make_panel(frame, bg=COLORS["surface"], border=COLORS["border"])
-        footer_outer.pack(fill=tk.X, padx=42, pady=(0, 30))
+        footer_outer.pack(fill=tk.X, padx=40, pady=(0, 28))
         tk.Label(
             footer,
             text=t("lobby_controls"),
             font=(FONT_MONO, 9),
             bg=COLORS["surface"],
             fg=COLORS["subtle"],
-        ).pack(side=tk.LEFT, padx=16, pady=12)
+        ).pack(side=tk.LEFT, padx=18, pady=12)
         tk.Label(
             footer,
-            text="MINESWEEPER // COMMAND DECK",
+            text=t("control_kicker"),
             font=(FONT_MONO, 9),
             bg=COLORS["surface"],
             fg=COLORS["subtle"],
-        ).pack(side=tk.RIGHT, padx=16, pady=12)
+        ).pack(side=tk.RIGHT, padx=18, pady=12)
 
     def _lobby_identity_panel(self, parent) -> tk.Frame:
         summary = get_user_profile_summary(self.current_user["id"])
@@ -157,11 +171,11 @@ class MainApp:
             font=(FONT_MONO, 9, "bold"),
             bg=COLORS["surface"],
             fg=COLORS["primary"],
-        ).pack(anchor="w", padx=20, pady=(22, 6))
+        ).pack(anchor="w", padx=20, pady=(20, 6))
         tk.Label(
             inner,
             text=self.current_user["username"],
-            font=(FONT, 21, "bold"),
+            font=(FONT, 22, "bold"),
             bg=COLORS["surface"],
             fg=COLORS["text"],
         ).pack(anchor="w", padx=20)
@@ -173,7 +187,7 @@ class MainApp:
             fg=COLORS["muted"],
             wraplength=190,
             justify="left",
-        ).pack(anchor="w", padx=20, pady=(6, 18))
+        ).pack(anchor="w", padx=20, pady=(4, 16))
 
         for label, value, accent in (
             (t("profile_total_matches"), str(summary["total_matches"]).zfill(2), COLORS["primary"]),
@@ -192,16 +206,16 @@ class MainApp:
             font=(FONT_MONO, 9, "bold"),
             bg=COLORS["surface"],
             fg=COLORS["primary"],
-        ).pack(anchor="w", padx=20, pady=(22, 8))
+        ).pack(anchor="w", padx=20, pady=(20, 6))
         tk.Label(
             inner,
             text=t("lobby_records_subtitle"),
             font=(FONT, 10),
             bg=COLORS["surface"],
             fg=COLORS["muted"],
-            wraplength=250,
+            wraplength=240,
             justify="left",
-        ).pack(anchor="w", padx=20, pady=(0, 22))
+        ).pack(anchor="w", padx=20, pady=(0, 18))
 
         accents = {
             "9x9": COLORS["success"],
@@ -219,16 +233,16 @@ class MainApp:
                 label,
                 format_duration(best_seconds),
                 accent=accents[difficulty],
-            ).pack(fill=tk.X, padx=20, pady=(0, 16))
+            ).pack(fill=tk.X, padx=20, pady=(0, 14))
 
-        tk.Frame(inner, bg=COLORS["border"], height=1).pack(fill=tk.X, padx=20, pady=(4, 18))
+        tk.Frame(inner, bg=COLORS["border"], height=1).pack(fill=tk.X, padx=20, pady=(4, 16))
         CyberButton(
             inner,
             text=t("btn_ranking"),
             variant="secondary",
             command=self._show_ranking,
             size="large",
-        ).pack(fill=tk.X, padx=20, pady=(0, 20))
+        ).pack(fill=tk.X, padx=20, pady=(0, 18))
         return outer
 
     def _difficulty_card(
@@ -236,16 +250,16 @@ class MainApp:
     ) -> None:
         card, content = make_panel(parent, bg=COLORS["surface"], border=accent)
         card.grid(row=0, column=column, sticky="nsew", padx=(0 if column == 0 else 8, 8 if column < 2 else 0))
-        tk.Frame(content, bg=accent, height=5).pack(fill=tk.X)
+        tk.Frame(content, bg=accent, height=4).pack(fill=tk.X)
         content = tk.Frame(content, bg=COLORS["surface"])
-        content.pack(fill=tk.BOTH, expand=True, padx=24, pady=28)
-        tk.Label(content, text=f"MODE // {code}", font=(FONT_MONO, 10, "bold"), bg=COLORS["surface"], fg=accent).pack(
+        content.pack(fill=tk.BOTH, expand=True, padx=22, pady=24)
+        tk.Label(content, text=f"{t('mode_label')} // {code}", font=(FONT_MONO, 10, "bold"), bg=COLORS["surface"], fg=accent).pack(
             anchor="w"
         )
         tk.Label(content, text=label, font=(FONT, 19, "bold"), bg=COLORS["surface"], fg=accent).pack(anchor="w", pady=(2, 0))
         cfg = DIFFICULTY_CONFIG[key]
         metrics = tk.Frame(content, bg=COLORS["surface"])
-        metrics.pack(fill=tk.X, pady=(18, 14))
+        metrics.pack(fill=tk.X, pady=(16, 12))
         metric_label(metrics, t("grid_label"), f"{cfg['rows']}x{cfg['cols']}", accent=COLORS["text"]).pack(
             side=tk.LEFT, expand=True, fill=tk.X
         )
@@ -255,10 +269,10 @@ class MainApp:
         tk.Label(
             content,
             text=f"{t('threat_label')}: {t(threat_key(key))}  /  {t('mine_count_label')}: {cfg['mines']}",
-            font=(FONT_MONO, 11, "bold"),
+            font=(FONT_MONO, 10, "bold"),
             bg=COLORS["surface"],
             fg=accent,
-        ).pack(anchor="w", pady=(2, 8))
+        ).pack(anchor="w", pady=(4, 8))
 
         run_count, best_seconds = self._personal_stats(key)
         record_bar = tk.Frame(content, bg=COLORS["surface"])
@@ -283,7 +297,7 @@ class MainApp:
             content,
             text=t("btn_start"),
             command=lambda selected=key: self._start_game(selected),
-        ).pack(fill=tk.X, pady=(26, 0))
+        ).pack(fill=tk.X, pady=(22, 0))
 
     def _personal_stats(self, difficulty: str) -> tuple[int, int | None]:
         records = [
@@ -306,6 +320,22 @@ class MainApp:
                 pass
             dialog.destroy()
         self._profile_dialog = None
+
+    def _theme_label(self) -> str:
+        return "浅色" if get_theme() == "light" else "深色"
+
+    def _sound_label(self) -> str:
+        return "音效开" if is_enabled() else "音效关"
+
+    def _toggle_theme(self) -> None:
+        set_theme("light" if get_theme() == "dark" else "dark")
+        self._show_menu()
+
+    def _toggle_sound(self) -> None:
+        set_enabled(not is_enabled())
+        button = getattr(self, "_lobby_sound_button", None)
+        if button is not None and button.winfo_exists():
+            button.configure(text=self._sound_label())
 
     def _show_profile(self) -> None:
         if self.current_user is None:
@@ -333,30 +363,30 @@ class MainApp:
         dialog.grid_rowconfigure(0, weight=1)
 
         outer, inner = make_panel(dialog, bg=COLORS["surface"], border=COLORS["border_hot"])
-        outer.grid(row=0, column=0, sticky="nsew", padx=14, pady=(14, 8))
+        outer.grid(row=0, column=0, sticky="nsew", padx=18, pady=(18, 10))
 
         header = tk.Frame(inner, bg=COLORS["surface"])
-        header.pack(fill=tk.X, padx=24, pady=(20, 8))
+        header.pack(fill=tk.X, padx=28, pady=(24, 10))
         header_left = tk.Frame(header, bg=COLORS["surface"])
         header_left.pack(side=tk.LEFT, fill=tk.X, expand=True)
         tk.Label(
             header_left,
             text=t("profile_label"),
-            font=(FONT_MONO, 9, "bold"),
+            font=(FONT_MONO, 10, "bold"),
             bg=COLORS["surface"],
             fg=COLORS["primary"],
         ).pack(anchor="w")
         tk.Label(
             header_left,
             text=self.current_user["username"],
-            font=(FONT, 22, "bold"),
+            font=(FONT, 24, "bold"),
             bg=COLORS["surface"],
             fg=COLORS["text"],
         ).pack(anchor="w", pady=(4, 0))
         tk.Label(
             header_left,
             text=t("profile_subtitle"),
-            font=(FONT, 10),
+            font=(FONT, 11),
             bg=COLORS["surface"],
             fg=COLORS["muted"],
         ).pack(anchor="w", pady=(4, 0))
@@ -365,7 +395,7 @@ class MainApp:
         )
 
         stats = tk.Frame(inner, bg=COLORS["surface"])
-        stats.pack(fill=tk.X, padx=24, pady=(8, 0))
+        stats.pack(fill=tk.X, padx=28, pady=(10, 0))
         for index in range(4):
             stats.grid_columnconfigure(index, weight=1, uniform="profile_stats")
         metric_label(stats, t("profile_total_matches"), str(summary["total_matches"]).zfill(2), accent=COLORS["primary"]).grid(
@@ -382,14 +412,14 @@ class MainApp:
         )
 
         best_section = tk.Frame(inner, bg=COLORS["surface"])
-        best_section.pack(fill=tk.X, padx=24, pady=(18, 0))
+        best_section.pack(fill=tk.X, padx=28, pady=(20, 0))
         tk.Label(
             best_section,
             text=t("personal_best_title"),
-            font=(FONT_MONO, 9, "bold"),
+            font=(FONT_MONO, 10, "bold"),
             bg=COLORS["surface"],
             fg=COLORS["primary"],
-        ).pack(anchor="w", pady=(0, 10))
+        ).pack(anchor="w", pady=(0, 12))
         best_cards = tk.Frame(best_section, bg=COLORS["surface"])
         best_cards.pack(fill=tk.X)
         for index in range(3):
@@ -403,38 +433,38 @@ class MainApp:
             ]
         ):
             outer_card, inner_card = make_panel(best_cards, bg=COLORS["surface_alt"], border=accent)
-            outer_card.grid(row=0, column=column, sticky="nsew", padx=(0 if column == 0 else 8, 8 if column < 2 else 0))
+            outer_card.grid(row=0, column=column, sticky="nsew", padx=(0 if column == 0 else 10, 10 if column < 2 else 0))
             tk.Label(
                 inner_card,
                 text=label,
-                font=(FONT, 10, "bold"),
+                font=(FONT, 11, "bold"),
                 bg=COLORS["surface_alt"],
                 fg=accent,
-            ).pack(anchor="w", padx=16, pady=(14, 2))
+            ).pack(anchor="w", padx=18, pady=(16, 2))
             tk.Label(
                 inner_card,
                 text=format_duration(summary["best_by_difficulty"].get(difficulty)),
-                font=(FONT_MONO, 18, "bold"),
+                font=(FONT_MONO, 20, "bold"),
                 bg=COLORS["surface_alt"],
                 fg=COLORS["text"] if summary["best_by_difficulty"].get(difficulty) is not None else COLORS["disabled"],
-            ).pack(anchor="w", padx=16)
+            ).pack(anchor="w", padx=18)
             tk.Label(
                 inner_card,
                 text=f"{summary['run_counts'].get(difficulty, 0):02d} {t('ops_label')}",
-                font=(FONT_MONO, 8),
+                font=(FONT_MONO, 9),
                 bg=COLORS["surface_alt"],
                 fg=COLORS["muted"],
-            ).pack(anchor="w", padx=16, pady=(6, 14))
+            ).pack(anchor="w", padx=18, pady=(6, 16))
 
         recent_section = tk.Frame(inner, bg=COLORS["surface"])
-        recent_section.pack(fill=tk.BOTH, expand=True, padx=24, pady=(18, 0))
+        recent_section.pack(fill=tk.BOTH, expand=True, padx=28, pady=(20, 0))
         tk.Label(
             recent_section,
             text=t("profile_recent_title"),
-            font=(FONT_MONO, 9, "bold"),
+            font=(FONT_MONO, 10, "bold"),
             bg=COLORS["surface"],
             fg=COLORS["primary"],
-        ).pack(anchor="w", pady=(0, 10))
+        ).pack(anchor="w", pady=(0, 12))
         recent_outer, recent_inner = make_panel(recent_section, bg=COLORS["surface"], border=COLORS["border"])
         recent_outer.pack(fill=tk.BOTH, expand=True)
         rows = summary["recent_matches"]
@@ -469,7 +499,7 @@ class MainApp:
                 tk.Label(
                     left,
                     text=t("match_win") if record.get("result") == "win" else t("match_fail"),
-                    font=(FONT_MONO, 8),
+                    font=(FONT_MONO, 9),
                     bg=row_bg,
                     fg=COLORS["success"] if record.get("result") == "win" else COLORS["danger"],
                 ).pack(anchor="w", pady=(4, 0))
@@ -485,7 +515,7 @@ class MainApp:
                 tk.Label(
                     right,
                     text=record.get("completed_at", "--"),
-                    font=(FONT_MONO, 8),
+                    font=(FONT_MONO, 9),
                     bg=row_bg,
                     fg=COLORS["muted"],
                 ).pack(anchor="e", pady=(4, 0))
@@ -550,6 +580,10 @@ class MainApp:
 
     def _quit(self) -> None:
         self._close_profile_dialog()
+        try:
+            save_window_geometry(self.root.geometry())
+        except tk.TclError:
+            pass
         self.root.destroy()
 
 

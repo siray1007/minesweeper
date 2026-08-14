@@ -2,56 +2,107 @@
 from __future__ import annotations
 
 import base64
+import os
 import tkinter as tk
 from tkinter import ttk
 
 
-COLORS = {
-    "bg": "#070b14",
-    "bg_grid": "#0d2038",
-    "surface": "#0d1320",
-    "surface_alt": "#111a2c",
-    "surface_metal": "#172033",
-    "surface_hover": "#162238",
-    "border": "#22314a",
-    "border_hot": "#2ce6ff",
-    "border_dim": "#263c5c",
-    "tile_border": "#3c78a8",
-    "tile_open_border": "#314f73",
-    "text": "#edf3ff",
-    "muted": "#8a97b2",
-    "subtle": "#5d687f",
-    "disabled": "#3f4b61",
-    "primary": "#34d6ff",
-    "primary_hover": "#67e3ff",
-    "primary_pressed": "#179cc2",
-    "success": "#35e0a1",
+_DATA_ROOT = os.getenv("LOCALAPPDATA") or os.getenv("APPDATA") or os.path.expanduser("~")
+_DATA_DIR = os.path.join(_DATA_ROOT, "CyberMinesweeper")
+_GEOM_FILE = os.path.join(_DATA_DIR, "window_geometry.txt")
+
+
+DARK_COLORS = {
+    "bg": "#102a43",
+    "bg_grid": "#183a56",
+    "surface": "#173b57",
+    "surface_alt": "#214c69",
+    "surface_metal": "#2b5873",
+    "surface_hover": "#356983",
+    "surface_pressed": "#1f4257",
+    "border": "#5c7f96",
+    "border_hot": "#64ddf2",
+    "border_dim": "#345b73",
+    "tile_border": "#6f91a6",
+    "tile_open_border": "#9db5c4",
+    "text": "#f5fbff",
+    "muted": "#c4d7e2",
+    "subtle": "#9bb7c8",
+    "disabled": "#8fb3c6",
+    "primary": "#55d8ee",
+    "primary_hover": "#7ae6f5",
+    "primary_pressed": "#31b8d1",
+    "success": "#6ee7b7",
     "warning": "#ffd166",
-    "danger": "#ff5c7a",
-    "danger_dim": "#391320",
-    "accent": "#9b6dff",
-    "input": "#050812",
-    "tile_even": "#17395c",
-    "tile_odd": "#14334f",
-    "tile_open": "#09111d",
-    "tile_open_alt": "#0c1929",
-    "tile_flag": "#4c1837",
-    "tile_flag_hot": "#ff7b9a",
-    "tile_edge_light": "#68b7e8",
-    "tile_edge_shadow": "#081522",
+    "danger": "#ff6f91",
+    "danger_dim": "#6b2944",
+    "danger_pressed": "#4d1f33",
+    "accent": "#a99cff",
+    "input": "#0e314c",
+    "tile_even": "#39bde0",
+    "tile_odd": "#62d8c7",
+    "tile_open": "#d7e6ec",
+    "tile_open_alt": "#cfdee5",
+    "tile_open_highlight": "#f6fbfd",
+    "tile_open_shadow": "#9db4c1",
+    "tile_flag": "#a83f62",
+    "tile_edge_light": "#c5f6ff",
+    "tile_edge_shadow": "#28718c",
 }
+
+
+LIGHT_COLORS = {
+    "bg": "#eef2f7",
+    "bg_grid": "#e2e8f0",
+    "surface": "#ffffff",
+    "surface_alt": "#f4f7fb",
+    "surface_metal": "#e8eef5",
+    "surface_hover": "#dbe6f0",
+    "surface_pressed": "#c9d9e8",
+    "border": "#b8c7d8",
+    "border_hot": "#0aa2c0",
+    "border_dim": "#d5dee8",
+    "tile_border": "#9db5c8",
+    "tile_open_border": "#c3d0dc",
+    "text": "#10263a",
+    "muted": "#4a5f73",
+    "subtle": "#6b7f92",
+    "disabled": "#94a7b8",
+    "primary": "#0a9bb8",
+    "primary_hover": "#0bb0d0",
+    "primary_pressed": "#087f99",
+    "success": "#0e9f6e",
+    "warning": "#d97706",
+    "danger": "#e0446c",
+    "danger_dim": "#f7d5de",
+    "danger_pressed": "#f0b8c8",
+    "accent": "#7c5cff",
+    "input": "#ffffff",
+    "tile_even": "#4a9bd8",
+    "tile_odd": "#43b8a0",
+    "tile_open": "#f8fafc",
+    "tile_open_alt": "#f0f4f8",
+    "tile_open_highlight": "#ffffff",
+    "tile_open_shadow": "#cbd6e0",
+    "tile_flag": "#f4c7d1",
+    "tile_edge_light": "#eaf6ff",
+    "tile_edge_shadow": "#9fb6c8",
+}
+
+
+COLORS = dict(DARK_COLORS)
 
 FONT = "Microsoft YaHei UI"
 FONT_MONO = "Consolas"
 
 LAYOUT = {
-    "auth": (780, 860, 600, 720),
-    "lobby": (1580, 940, 1280, 760),
-    "game_easy": (1080, 880, 820, 720),
-    "game_medium": (1360, 940, 1040, 780),
-    "game_hard": (1640, 980, 1160, 800),
-    "ranking": (1400, 880, 1120, 740),
-    "profile": (1280, 900, 1080, 780),
+    "auth": (720, 780, 620, 680),
+    "lobby": (1280, 800, 1080, 680),
+    "game_easy": (960, 720, 820, 620),
+    "game_medium": (1180, 780, 1000, 680),
+    "game_hard": (1360, 820, 1100, 700),
+    "ranking": (1260, 800, 1080, 680),
+    "profile": (1200, 760, 1040, 680),
 }
 
 
@@ -69,15 +120,15 @@ class CyberButton(tk.Button):
         size: str = "normal",
     ):
         if variant == "primary":
-            bg, fg, active_bg = COLORS["primary"], "#08101b", COLORS["primary_hover"]
-            border = COLORS["primary"]
+            bg, hover_bg, pressed_bg = COLORS["primary"], COLORS["primary_hover"], COLORS["primary_pressed"]
+            fg, border = "#071019", COLORS["primary"]
         elif variant == "danger":
-            bg, fg, active_bg = COLORS["danger_dim"], COLORS["text"], COLORS["danger"]
-            border = COLORS["danger"]
+            bg, hover_bg, pressed_bg = COLORS["danger_dim"], COLORS["danger"], COLORS["danger_pressed"]
+            fg, border = COLORS["text"], COLORS["danger"]
         else:
-            bg, fg, active_bg = COLORS["surface_metal"], COLORS["text"], COLORS["surface_hover"]
-            border = COLORS["border_hot"]
-        font_size, padx, pady = (12, 30, 18) if size == "large" else (10, 18, 11)
+            bg, hover_bg, pressed_bg = COLORS["surface_metal"], COLORS["surface_hover"], COLORS["surface_pressed"]
+            fg, border = COLORS["text"], COLORS["border_hot"] if size == "large" else COLORS["border"]
+        font_size, padx, pady = (12, 22, 12) if size == "large" else (10, 18, 9)
         super().__init__(
             parent,
             text=text,
@@ -85,7 +136,7 @@ class CyberButton(tk.Button):
             font=(FONT, font_size, "bold"),
             bg=bg,
             fg=fg,
-            activebackground=active_bg,
+            activebackground=pressed_bg,
             activeforeground=fg,
             relief="flat",
             bd=0,
@@ -98,7 +149,7 @@ class CyberButton(tk.Button):
             width=width,
         )
         self._normal_bg = bg
-        self._hover_bg = active_bg
+        self._hover_bg = hover_bg
         self.bind("<Enter>", lambda _event: self.configure(bg=self._hover_bg))
         self.bind("<Leave>", lambda _event: self.configure(bg=self._normal_bg))
 
@@ -115,47 +166,20 @@ def configure_ttk(root: tk.Misc) -> None:
     except tk.TclError:
         pass
 
-    style.configure(
-        "Primary.TButton",
-        font=(FONT, 11, "bold"),
-        padding=(16, 9),
-        background=COLORS["primary"],
-        foreground="#08101b",
-        borderwidth=0,
-        focusthickness=2,
-        focuscolor=COLORS["warning"],
-    )
+    style.configure("Primary.TButton", font=(FONT, 11, "bold"), padding=(16, 9), background=COLORS["primary"], foreground="#071019", borderwidth=0, focusthickness=2, focuscolor=COLORS["warning"])
     style.map(
         "Primary.TButton",
         background=[("pressed", COLORS["primary_pressed"]), ("active", COLORS["primary_hover"])],
         foreground=[("disabled", COLORS["subtle"])],
     )
 
-    style.configure(
-        "Secondary.TButton",
-        font=(FONT, 10, "bold"),
-        padding=(14, 8),
-        background=COLORS["surface_alt"],
-        foreground=COLORS["text"],
-        borderwidth=1,
-        focusthickness=2,
-        focuscolor=COLORS["warning"],
-    )
+    style.configure("Secondary.TButton", font=(FONT, 10, "bold"), padding=(14, 8), background=COLORS["surface_alt"], foreground=COLORS["text"], borderwidth=1, focusthickness=2, focuscolor=COLORS["warning"])
     style.map(
         "Secondary.TButton",
         background=[("pressed", COLORS["surface"]), ("active", COLORS["surface_hover"])],
     )
 
-    style.configure(
-        "Ghost.TButton",
-        font=(FONT, 10),
-        padding=(12, 7),
-        background=COLORS["surface"],
-        foreground=COLORS["muted"],
-        borderwidth=0,
-        focusthickness=2,
-        focuscolor=COLORS["warning"],
-    )
+    style.configure("Ghost.TButton", font=(FONT, 9), padding=(10, 6), background=COLORS["surface"], foreground=COLORS["muted"], borderwidth=0, focusthickness=2, focuscolor=COLORS["warning"])
     style.map(
         "Ghost.TButton",
         background=[("active", COLORS["surface_hover"])],
@@ -164,31 +188,34 @@ def configure_ttk(root: tk.Misc) -> None:
 
     style.configure(
         "Language.TCombobox",
-        font=(FONT, 11, "bold"),
-        padding=(12, 8),
+        font=(FONT, 10, "bold"),
+        padding=(10, 6),
         fieldbackground=COLORS["surface_metal"],
         background=COLORS["surface_metal"],
         foreground=COLORS["text"],
         arrowcolor=COLORS["primary"],
-        bordercolor=COLORS["border_hot"],
-        lightcolor=COLORS["border_hot"],
-        darkcolor=COLORS["border_hot"],
+        bordercolor=COLORS["border_dim"],
+        lightcolor=COLORS["border_dim"],
+        darkcolor=COLORS["border_dim"],
         borderwidth=0,
         relief="flat",
     )
     style.map(
         "Language.TCombobox",
-        fieldbackground=[("readonly", COLORS["surface_metal"])],
+        fieldbackground=[("readonly", COLORS["surface_alt"]), ("focus", COLORS["surface_hover"])],
         foreground=[("readonly", COLORS["text"])],
         selectbackground=[("readonly", COLORS["surface_metal"])],
         selectforeground=[("readonly", COLORS["text"])],
+        bordercolor=[("focus", COLORS["border_hot"])],
+        lightcolor=[("focus", COLORS["border_hot"])],
+        darkcolor=[("focus", COLORS["border_hot"])],
     )
 
     style.configure("App.TNotebook", background=COLORS["bg"], borderwidth=0, tabmargins=0)
     style.configure(
         "App.TNotebook.Tab",
         font=(FONT, 10, "bold"),
-        padding=(16, 9),
+        padding=(14, 9),
         background=COLORS["surface"],
         foreground=COLORS["muted"],
         borderwidth=0,
@@ -202,7 +229,7 @@ def configure_ttk(root: tk.Misc) -> None:
     style.configure(
         "App.Treeview",
         font=(FONT, 10),
-        rowheight=32,
+        rowheight=30,
         background=COLORS["surface"],
         foreground=COLORS["text"],
         fieldbackground=COLORS["surface"],
@@ -211,7 +238,7 @@ def configure_ttk(root: tk.Misc) -> None:
     style.configure(
         "App.Treeview.Heading",
         font=(FONT, 10, "bold"),
-        padding=(8, 8),
+        padding=(8, 7),
         background=COLORS["surface_alt"],
         foreground=COLORS["muted"],
         relief="flat",
@@ -234,7 +261,7 @@ def configure_ttk(root: tk.Misc) -> None:
             bordercolor=COLORS["border"],
             arrowcolor=COLORS["primary"],
             relief="flat",
-            width=14,
+            width=13,
         )
         style.map(
             f"Cyber.{orientation}.TScrollbar",
@@ -283,17 +310,23 @@ def metric_label(
 ) -> tk.Frame:
     """Small terminal-style metric block."""
     fill = bg or COLORS["surface"]
-    frame = tk.Frame(parent, bg=fill)
-    tk.Label(frame, text=label.upper(), font=(FONT_MONO, 8), bg=fill, fg=COLORS["subtle"]).pack(
-        anchor="w"
+    frame = tk.Frame(
+        parent,
+        bg=fill,
+        highlightthickness=1,
+        highlightbackground=COLORS["border_dim"],
+        highlightcolor=COLORS["border_hot"],
+        padx=12,
+        pady=9,
     )
+    tk.Label(frame, text=label.upper(), font=(FONT_MONO, 9), bg=fill, fg=COLORS["muted"]).pack(anchor="w")
     tk.Label(
         frame,
         text=value,
         font=(FONT_MONO, 13, "bold"),
         bg=fill,
         fg=accent or COLORS["text"],
-    ).pack(anchor="w", pady=(2, 0))
+    ).pack(anchor="w", pady=(3, 0))
     return frame
 
 
@@ -305,66 +338,122 @@ def section_title(
     glow = accent or COLORS["primary"]
     frame = tk.Frame(parent, bg=fill)
     tk.Label(frame, text=kicker, font=(FONT_MONO, 10, "bold"), bg=fill, fg=glow).pack(anchor="w")
-    tk.Label(frame, text=title, font=(FONT, 30, "bold"), bg=fill, fg=COLORS["text"]).pack(anchor="w", pady=(4, 0))
-    tk.Frame(frame, bg=glow, height=2).pack(fill=tk.X, pady=(10, 9))
+    tk.Label(frame, text=title, font=(FONT, 30, "bold"), bg=fill, fg=COLORS["text"]).pack(anchor="w", pady=(3, 0))
+    tk.Frame(frame, bg=glow, height=2).pack(fill=tk.X, pady=(10, 8))
     tk.Label(frame, text=subtitle, font=(FONT, 11), bg=fill, fg=COLORS["muted"]).pack(anchor="w")
     return frame
 
 
-def draw_grid_background(canvas: tk.Canvas, width: int, height: int, *, step: int = 32) -> None:
+def draw_grid_background(canvas: tk.Canvas, width: int, height: int, *, step: int = 48) -> None:
     """Draw a restrained cyber grid on a Tk canvas."""
     for x in range(0, width + 1, step):
         canvas.create_line(x, 0, x, height, fill=COLORS["bg_grid"], width=1, tags="grid")
     for y in range(0, height + 1, step):
         canvas.create_line(0, y, width, y, fill=COLORS["bg_grid"], width=1, tags="grid")
-    canvas.create_line(0, 0, width, 0, fill=COLORS["border_hot"], width=1, tags="grid")
+    canvas.create_line(0, 0, width, 0, fill=COLORS["border"], width=1, tags="grid")
 
 
 def install_backdrop(parent: tk.Misc) -> tk.Canvas:
-    """Install a lightweight animated cyber grid behind a frame."""
+    """Install a static cyber grid behind a frame."""
     canvas = tk.Canvas(parent, bg=COLORS["bg"], highlightthickness=0, bd=0)
     canvas.place(x=0, y=0, relwidth=1, relheight=1)
     canvas.tk.call("lower", canvas._w)
-    state = {"scan": 0, "width": 1, "height": 1, "after_id": None}
-
     def redraw(width: int, height: int) -> None:
-        state["width"], state["height"] = max(1, width), max(1, height)
         canvas.delete("grid")
-        draw_grid_background(canvas, state["width"], state["height"], step=36)
-        for y in range(0, state["height"] + 1, 144):
-            canvas.create_line(0, y, state["width"], y, fill=COLORS["border_dim"], tags="grid")
+        width, height = max(1, width), max(1, height)
+        draw_grid_background(canvas, width, height, step=48)
+        for y in range(0, height + 1, 192):
+            canvas.create_line(0, y, width, y, fill=COLORS["border_dim"], tags="grid")
 
     def on_configure(event) -> None:
         redraw(event.width, event.height)
 
-    def animate() -> None:
-        if not canvas.winfo_exists():
-            return
-        canvas.delete("scan")
-        state["scan"] = (state["scan"] + 7) % max(1, state["height"] + 80)
-        y = state["scan"] - 40
-        canvas.create_rectangle(0, y, state["width"], y + 2, fill=COLORS["primary"], outline="", tags="scan")
-        canvas.create_rectangle(
-            0, y + 3, state["width"], y + 16, fill=COLORS["bg_grid"], outline="", stipple="gray25", tags="scan"
-        )
-        state["after_id"] = canvas.after(80, animate)
-
-    def on_destroy(_event) -> None:
-        after_id = state.get("after_id")
-        if after_id:
-            try:
-                canvas.after_cancel(after_id)
-            except tk.TclError:
-                pass
-            state["after_id"] = None
-
     canvas.bind("<Configure>", on_configure)
-    canvas.bind("<Destroy>", on_destroy)
-    state["after_id"] = canvas.after(120, animate)
     return canvas
 
 
-def set_window_geometry(root: tk.Misc, width: int, height: int, min_width: int, min_height: int) -> None:
-    root.geometry(f"{width}x{height}")
+def load_window_geometry() -> str | None:
+    """Return the persisted window geometry, or None if unavailable."""
+    try:
+        with open(_GEOM_FILE, "r", encoding="utf-8") as geom_file:
+            geometry = geom_file.read().strip()
+        return geometry or None
+    except OSError:
+        return None
+
+
+def save_window_geometry(geometry: str) -> None:
+    """Persist the window geometry across sessions."""
+    try:
+        os.makedirs(_DATA_DIR, exist_ok=True)
+        with open(_GEOM_FILE, "w", encoding="utf-8") as geom_file:
+            geom_file.write(geometry)
+    except OSError:
+        pass
+
+
+def fit_window(root: tk.Misc, width: int, height: int, min_width: int, min_height: int) -> None:
+    """Clamp the requested size to the screen, then center or restore position."""
+    screen_w = root.winfo_screenwidth()
+    screen_h = root.winfo_screenheight()
+    avail_h = max(480, screen_h - 60)
+    width = max(320, min(int(width), screen_w - 40))
+    height = max(240, min(int(height), avail_h))
+    min_width = min(int(min_width), width)
+    min_height = min(int(min_height), height)
+
+    # Restore the last position when it still fits on screen; otherwise center.
+    x = y = None
+    saved = load_window_geometry()
+    if saved:
+        parts = saved.split("+")
+        if len(parts) >= 3:
+            try:
+                x, y = int(parts[1]), int(parts[2])
+            except ValueError:
+                x = y = None
+    if x is None or y is None or x < 0 or y < 0 or x + width > screen_w or y + height > screen_h:
+        x = max(0, (screen_w - width) // 2)
+        y = max(0, (screen_h - height) // 2 - 20)
+
+    root.geometry(f"{width}x{height}+{x}+{y}")
     root.minsize(min_width, min_height)
     root.configure(bg=COLORS["bg"])
+
+
+def set_window_geometry(root: tk.Misc, width: int, height: int, min_width: int, min_height: int) -> None:
+    fit_window(root, width, height, min_width, min_height)
+
+
+_THEME_FILE = os.path.join(_DATA_DIR, "theme_pref.txt")
+_current_theme = "dark"
+
+
+def apply_theme(theme: str) -> None:
+    global _current_theme
+    _current_theme = "light" if theme == "light" else "dark"
+    COLORS.clear()
+    COLORS.update(LIGHT_COLORS if _current_theme == "light" else DARK_COLORS)
+
+
+def get_theme() -> str:
+    return _current_theme
+
+
+def set_theme(theme: str) -> None:
+    apply_theme(theme)
+    try:
+        os.makedirs(_DATA_DIR, exist_ok=True)
+        with open(_THEME_FILE, "w", encoding="utf-8") as theme_file:
+            theme_file.write(_current_theme)
+    except OSError:
+        pass
+
+
+def load_theme() -> None:
+    try:
+        with open(_THEME_FILE, "r", encoding="utf-8") as theme_file:
+            theme = theme_file.read().strip()
+    except OSError:
+        theme = "dark"
+    apply_theme(theme)
