@@ -5,11 +5,7 @@ on:
   push:
     branches: [main]
     paths:
-      - '**.py'
-      - 'run.bat'
-      - 'build_release.ps1'
-      - '*.png'
-      - '*.ico'
+      - 'minesweeper-py/**'
       - '.github/workflows/release.yml'
 
 permissions:
@@ -33,6 +29,7 @@ jobs:
 
       - name: Build executable
         shell: powershell
+        working-directory: minesweeper-py
         run: |
           .\build_release.ps1
           if (-not (Test-Path -LiteralPath '.\扫雷.exe')) {
@@ -53,6 +50,6 @@ jobs:
           tag_name: ${{ env.TAG }}
           name: "扫雷 ${{ env.TAG }}"
           generate_release_notes: true
-          files: 扫雷.exe
+          files: minesweeper-py/扫雷.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

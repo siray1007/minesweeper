@@ -17,7 +17,7 @@ __pycache__/
 *.pyc
 
 # Rust
-rust版/target/
+minesweeper-rs/target/
 
 # 系统文件
 Thumbs.db
