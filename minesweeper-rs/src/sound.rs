@@ -13,6 +13,11 @@ fn sink() -> Option<&'static MixerDeviceSink> {
         .as_ref()
 }
 
+/// 启动时预初始化音频设备，避免首次播放时的卡顿。
+pub fn init() {
+    let _ = sink();
+}
+
 fn play_tone(freq: f32, duration: Duration) {
     if let Some(sink) = sink() {
         let source = SineWave::new(freq).take_duration(duration).amplify(0.2);
